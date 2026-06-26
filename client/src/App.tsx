@@ -1,0 +1,41 @@
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
+import { authClient } from "./lib/auth-client"
+import LoginPage from "./pages/LoginPage"
+import HomePage from "./pages/HomePage"
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { data: session, isPending } = authClient.useSession()
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <span className="text-sm text-gray-400">Loading…</span>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <>{children}</>
+}
+
+const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <HomePage />
+      </ProtectedRoute>
+    ),
+  },
+])
+
+export default function App() {
+  return <RouterProvider router={router} />
+}
