@@ -1,5 +1,5 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
-import { authClient } from "./lib/auth-client"
+import { authClient } from "@/lib/auth-client"
 import LoginPage from "./pages/LoginPage"
 import HomePage from "./pages/HomePage"
 

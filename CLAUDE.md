@@ -9,11 +9,14 @@ AI-powered support ticket system that auto-classifies, routes, and drafts replie
 - Tailwind CSS v4 (Vite plugin — no PostCSS config needed)
 - React Router v7
 
+**Auth sidecar** (`auth/`)
+- Express.js + Better Auth v1 + Drizzle ORM + `pg`
+- Runs on port 3001; sign-up is disabled — users are seeded via `auth/src/seed.ts`
+
 **Backend** (`server/`)
 - FastAPI + Uvicorn
 - SQLAlchemy (ORM) + Alembic (migrations)
 - PostgreSQL (`psycopg2-binary`)
-- JWT auth via `python-jose`, password hashing via `passlib[bcrypt]`
 
 ## Dev Commands
 
@@ -22,6 +25,10 @@ AI-powered support ticket system that auto-classifies, routes, and drafts replie
 cd client && npm run dev       # http://localhost:5173
 cd client && npm run build
 cd client && npm run lint      # oxlint
+
+# Auth sidecar
+cd auth && npm run dev         # http://localhost:3001
+cd auth && npm run seed        # seed initial admin/agent users
 
 # Backend
 cd server && source venv/bin/activate
@@ -33,7 +40,14 @@ alembic upgrade head           # run migrations
 
 ```
 client/src/          React app
+  lib/auth-client.ts createAuthClient() — points at VITE_AUTH_URL (proxied to :3001)
+auth/src/
+  auth.ts            Better Auth config (emailAndPassword, role field, trustedOrigins)
+  index.ts           Express app — mounts Better Auth at /api/auth/*
+  db/schema.ts       Drizzle schema: users, sessions, accounts, verifications tables
+  seed.ts            Creates initial admin/agent users
 server/app/
+  auth.py            get_current_user + require_admin FastAPI dependencies
   models/            SQLAlchemy models (user.py, ticket.py, session.py)
   database.py        DB session / engine setup
 server/main.py       FastAPI entrypoint + CORS config
@@ -58,10 +72,36 @@ server/alembic/      Migration scripts
 - AI draft reply — agent must review and approve before sending (never fully automatic)
 - Knowledgebase: manual articles + uploaded PDFs
 
+## Authentication
+
+Three services share one PostgreSQL database:
+
+| Service | Port | Role |
+|---------|------|------|
+| `auth/` (Express + Better Auth) | 3001 | Issues/validates sessions, owns auth tables |
+| `server/` (FastAPI) | 3000 | Business logic; verifies sessions via DB |
+| `client/` (Vite) | 5173 | Proxies `/api/auth/*` → 3001, `/api/*` → 3000 |
+
+**Session flow:**
+1. Client calls `authClient.signIn.email()` → hits `/api/auth/sign-in/email` → proxied to Better Auth on 3001
+2. Better Auth sets `better-auth.session_token` cookie
+3. FastAPI reads that cookie (or `Authorization: Bearer <token>`) and queries the `sessions` table directly — no HTTP call to the auth service
+
+**FastAPI auth dependencies** (`server/app/auth.py`):
+- `get_current_user` — validates token, returns `User`
+- `require_admin` — wraps `get_current_user`, 403s if `user.role != "admin"`
+
+**DB tables owned by Better Auth:** `users`, `sessions`, `accounts`, `verifications`
+- Passwords are in `accounts.password` (not `users`)
+- Roles are a PostgreSQL enum: `admin` | `agent`
+- Sign-up is disabled — create users via `cd auth && npm run seed`
+
+**Client auth client** (`client/src/lib/auth-client.ts`): `createAuthClient({ baseURL: VITE_AUTH_URL })`
+
 ## Key Constraints
 
 - No student-facing portal — email only
-- Auth is email + password (JWT sessions)
+- Auth is email + password (Better Auth sessions, not JWT)
 - AI draft replies require human approval before sending
 - Dashboard metrics: ticket volume over time, open vs resolved counts, tickets by category, agent workload
 - Notifications: email to assigned agent when a ticket is assigned
@@ -80,7 +120,8 @@ Key libraries to always fetch fresh docs for:
 - react-router (v7 has breaking changes vs v6)
 - tailwindcss (v4 config differs significantly from v3)
 - vite
-- python-jose / passlib
+- better-auth
+- drizzle-orm
 ```
 
 Prefer context7 over training-data recall for any API surface, config format, or migration guide — especially for Tailwind v4, React Router v7, and React 19, which all have recent breaking changes.
