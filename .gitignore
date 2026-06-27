@@ -37,3 +37,8 @@ Thumbs.db
 
 # Alembic
 server/alembic/versions/*.pyc
+
+# Playwright
+playwright-report/
+test-results/
+.playwright/

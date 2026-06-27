@@ -18,33 +18,38 @@ const seedAuth = betterAuth({
   },
 })
 
-async function seed() {
-  const email = process.env.SEED_ADMIN_EMAIL
-  const password = process.env.SEED_ADMIN_PASSWORD
+async function seedUser(email: string, password: string, name: string, role: Role) {
+  if (password.length < 16) {
+    console.error(`Password for ${email} must be at least 16 characters`)
+    process.exit(1)
+  }
+  const existing = await db.select().from(user).where(eq(user.email, email)).limit(1)
+  if (existing.length > 0) {
+    console.log(`User ${email} already exists — skipping.`)
+    return
+  }
+  await seedAuth.api.signUpEmail({ body: { email, password, name } })
+  await db.update(user).set({ role }).where(eq(user.email, email))
+  console.log(`${role} user created: ${email}`)
+}
 
-  if (!email || !password) {
+async function seed() {
+  const adminEmail = process.env.SEED_ADMIN_EMAIL
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD
+
+  if (!adminEmail || !adminPassword) {
     console.error("SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set in .env")
     process.exit(1)
   }
 
-  if (password.length < 16) {
-    console.error("SEED_ADMIN_PASSWORD must be at least 16 characters")
-    process.exit(1)
+  await seedUser(adminEmail, adminPassword, "Admin", Role.admin)
+
+  const agentEmail = process.env.SEED_AGENT_EMAIL
+  const agentPassword = process.env.SEED_AGENT_PASSWORD
+  if (agentEmail && agentPassword) {
+    await seedUser(agentEmail, agentPassword, "Agent", Role.agent)
   }
 
-  const existing = await db.select().from(user).where(eq(user.email, email)).limit(1)
-  if (existing.length > 0) {
-    console.log(`User ${email} already exists — skipping.`)
-    process.exit(0)
-  }
-
-  await seedAuth.api.signUpEmail({
-    body: { email, password, name: "Admin" },
-  })
-
-  await db.update(user).set({ role: Role.admin }).where(eq(user.email, email))
-
-  console.log(`Admin user created: ${email}`)
   process.exit(0)
 }
 
