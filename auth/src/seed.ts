@@ -27,6 +27,11 @@ async function seed() {
     process.exit(1)
   }
 
+  if (password.length < 16) {
+    console.error("SEED_ADMIN_PASSWORD must be at least 16 characters")
+    process.exit(1)
+  }
+
   const existing = await db.select().from(user).where(eq(user.email, email)).limit(1)
   if (existing.length > 0) {
     console.log(`User ${email} already exists — skipping.`)
