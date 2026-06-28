@@ -3,6 +3,7 @@ import express from "express"
 import cors from "cors"
 import rateLimit from "express-rate-limit"
 import { toNodeHandler } from "better-auth/node"
+import { z } from "zod"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { eq } from "drizzle-orm"
@@ -39,6 +40,13 @@ const signInLimiter = rateLimit({
 
 app.use("/api/auth/sign-in", signInLimiter)
 
+const createUserSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().min(3, "Email must be at least 3 characters").email("Invalid email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(["agent", "admin"]).default("agent"),
+})
+
 // Private auth instance for admin-driven user creation (mirrors seed.ts pattern)
 const createUserAuth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),
@@ -62,10 +70,13 @@ app.post("/api/auth/admin/create-user", express.json(), async (req, res) => {
 
   if (!token) { res.status(401).json({ error: "Unauthorized" }); return }
 
+  // Better Auth appends ".signature" to the cookie value; the DB stores only the token part
+  const dbToken = token.split(".")[0]
+
   const [sess] = await db
     .select({ userId: session.userId, expiresAt: session.expiresAt })
     .from(session)
-    .where(eq(session.token, token))
+    .where(eq(session.token, dbToken))
     .limit(1)
 
   if (!sess || sess.expiresAt < new Date()) { res.status(401).json({ error: "Unauthorized" }); return }
@@ -78,10 +89,12 @@ app.post("/api/auth/admin/create-user", express.json(), async (req, res) => {
 
   if (!requestingUser || requestingUser.role !== "admin") { res.status(403).json({ error: "Forbidden" }); return }
 
-  const { name, email, password, role } = req.body
-  if (!name || !email || !password) { res.status(400).json({ error: "name, email, and password are required" }); return }
-  if (email.length < 3) { res.status(400).json({ error: "Email must be at least 3 characters" }); return }
-  if (password.length < 8) { res.status(400).json({ error: "Password must be at least 8 characters" }); return }
+  const parsed = createUserSchema.safeParse(req.body)
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message ?? "Invalid input"
+    res.status(400).json({ error: message }); return
+  }
+  const { name, email, password, role } = parsed.data
 
   const existing = await db.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1)
   if (existing.length > 0) { res.status(409).json({ error: "A user with this email already exists" }); return }

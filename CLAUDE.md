@@ -14,6 +14,7 @@ AI-powered support ticket system that auto-classifies, routes, and drafts replie
 **Auth sidecar** (`auth/`)
 - Express.js + Better Auth v1 + Drizzle ORM + `pg`
 - Runs on port 3001; sign-up is disabled — users are seeded via `auth/src/seed.ts`
+- **Zod** for all request body validation in custom Express routes
 
 **Backend** (`server/`)
 - FastAPI + Uvicorn
