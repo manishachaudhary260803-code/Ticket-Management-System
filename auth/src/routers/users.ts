@@ -2,10 +2,11 @@ import express from "express"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { eq } from "drizzle-orm"
-import { createUserSchema } from "@ticket/core"
+import { createUserSchema, editUserSchema } from "@ticket/core"
+import { hashPassword } from "@better-auth/utils/password"
 import { db } from "../db"
 import * as schema from "../db/schema"
-import { user, session } from "../db/schema"
+import { user, session, account } from "../db/schema"
 import { Role } from "../db/roles"
 
 const router = express.Router()
@@ -68,12 +69,42 @@ router.post("/", express.json(), async (req, res) => {
   const existing = await db.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1)
   if (existing.length > 0) { res.status(409).json({ error: "A user with this email already exists" }); return }
 
-  await createUserAuth.api.signUpEmail({ body: { email, password, name } })
+  const { user: newUser } = await createUserAuth.api.signUpEmail({ body: { email, password, name } })
   const finalRole = role === "admin" ? Role.admin : Role.agent
-  await db.update(user).set({ role: finalRole }).where(eq(user.email, email))
+  await db.update(user).set({ role: finalRole }).where(eq(user.id, newUser.id))
 
-  const [created] = await db.select().from(user).where(eq(user.email, email)).limit(1)
+  const [created] = await db.select().from(user).where(eq(user.id, newUser.id)).limit(1)
   res.status(201).json(created)
+})
+
+router.patch("/:id", express.json(), async (req, res) => {
+  if (!await requireAdmin(req, res)) return
+
+  const { id } = req.params
+  const parsed = editUserSchema.safeParse(req.body)
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message ?? "Invalid input"
+    res.status(400).json({ error: message }); return
+  }
+  const { name, email, password, role } = parsed.data
+
+  const [target] = await db.select({ id: user.id }).from(user).where(eq(user.id, id)).limit(1)
+  if (!target) { res.status(404).json({ error: "User not found" }); return }
+
+  // Check email uniqueness only if it changed
+  const [existing] = await db.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1)
+  if (existing && existing.id !== id) { res.status(409).json({ error: "A user with this email already exists" }); return }
+
+  const finalRole = role === "admin" ? Role.admin : Role.agent
+  await db.update(user).set({ name, email, role: finalRole, updatedAt: new Date() }).where(eq(user.id, id))
+
+  if (password) {
+    const hashed = await hashPassword(password)
+    await db.update(account).set({ password: hashed }).where(eq(account.userId, id))
+  }
+
+  const [updated] = await db.select().from(user).where(eq(user.id, id)).limit(1)
+  res.status(200).json(updated)
 })
 
 export default router

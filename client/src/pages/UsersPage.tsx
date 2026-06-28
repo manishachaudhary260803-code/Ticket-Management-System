@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar"
 import { Button } from "@/components/ui/button"
 import UsersTable from "../components/UsersTable"
 import CreateUserModal from "../components/CreateUserModal"
+import EditUserModal from "../components/EditUserModal"
 
 interface User {
   id: string
@@ -21,7 +22,8 @@ async function fetchUsers(): Promise<User[]> {
 }
 
 export default function UsersPage() {
-  const [showModal, setShowModal] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
 
   const { data: users = [], isPending, isError, error } = useQuery({
     queryKey: ["users"],
@@ -40,7 +42,7 @@ export default function UsersPage() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-800">Users</h2>
-          <Button onClick={() => setShowModal(true)} size="sm">
+          <Button onClick={() => setShowCreateModal(true)} size="sm">
             Add User
           </Button>
         </div>
@@ -50,10 +52,16 @@ export default function UsersPage() {
           isPending={isPending}
           isError={isError}
           errorMessage={errorMessage}
+          onEdit={setEditingUser}
         />
       </main>
 
-      <CreateUserModal open={showModal} onClose={() => setShowModal(false)} />
+      <CreateUserModal open={showCreateModal} onClose={() => setShowCreateModal(false)} />
+      <EditUserModal
+        open={editingUser !== null}
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
+      />
     </div>
   )
 }

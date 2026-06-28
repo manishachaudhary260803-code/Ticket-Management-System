@@ -1,4 +1,6 @@
+import { Pencil } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
 
 interface User {
   id: string
@@ -14,15 +16,17 @@ interface Props {
   isPending: boolean
   isError: boolean
   errorMessage: string | null
+  onEdit: (user: User) => void
 }
 
-export default function UsersTable({ users, isPending, isError, errorMessage }: Props) {
+export default function UsersTable({ users, isPending, isError, errorMessage, onEdit }: Props) {
   const headers = (
     <tr>
       <th className="px-4 py-3 text-left font-medium text-gray-500">Name</th>
       <th className="px-4 py-3 text-left font-medium text-gray-500">Email</th>
       <th className="px-4 py-3 text-left font-medium text-gray-500">Role</th>
       <th className="px-4 py-3 text-left font-medium text-gray-500">Joined</th>
+      <th className="px-4 py-3" />
     </tr>
   )
 
@@ -38,6 +42,7 @@ export default function UsersTable({ users, isPending, isError, errorMessage }: 
                 <td className="px-4 py-3"><Skeleton className="h-4 w-48" /></td>
                 <td className="px-4 py-3"><Skeleton className="h-5 w-14 rounded" /></td>
                 <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                <td className="px-4 py-3" />
               </tr>
             ))}
           </tbody>
@@ -81,11 +86,21 @@ export default function UsersTable({ users, isPending, isError, errorMessage }: 
                   day: "numeric",
                 })}
               </td>
+              <td className="px-4 py-3 text-right">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`Edit ${user.name}`}
+                  onClick={() => onEdit(user)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </td>
             </tr>
           ))}
           {users.length === 0 && (
             <tr>
-              <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
+              <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
                 No users found.
               </td>
             </tr>
