@@ -3,6 +3,7 @@ import { authClient } from "@/lib/auth-client"
 import LoginPage from "./pages/LoginPage"
 import HomePage from "./pages/HomePage"
 import TicketsPage from "./pages/TicketsPage"
+import TicketDetailPage from "./pages/TicketDetailPage"
 import UsersPage from "./pages/UsersPage"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -63,6 +64,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <TicketsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/tickets/:id",
+    element: (
+      <ProtectedRoute>
+        <TicketDetailPage />
       </ProtectedRoute>
     ),
   },

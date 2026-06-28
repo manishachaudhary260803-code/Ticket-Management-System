@@ -32,6 +32,8 @@ class TicketOut(BaseModel):
     from_name: str | None
     thread_id: str | None
     assignee_id: str | None
+    ai_summary: str | None
+    ai_draft_reply: str | None
     created_at: datetime
     updated_at: datetime
 

@@ -6,7 +6,9 @@ import {
   type SortingState,
 } from "@tanstack/react-table"
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { Link } from "react-router-dom"
 import { Skeleton } from "@/components/ui/skeleton"
+import { statusStyles, priorityStyles, categoryLabels } from "@/lib/ticket-utils"
 
 export interface Ticket {
   id: string
@@ -28,31 +30,19 @@ interface Props {
   onSortingChange: (s: SortingState) => void
 }
 
-const statusStyles: Record<string, string> = {
-  open: "bg-green-100 text-green-800",
-  in_progress: "bg-blue-100 text-blue-800",
-  resolved: "bg-gray-100 text-gray-600",
-}
-
-const priorityStyles: Record<string, string> = {
-  low: "bg-gray-100 text-gray-600",
-  medium: "bg-amber-100 text-amber-800",
-  high: "bg-red-100 text-red-700",
-}
-
-const categoryLabels: Record<string, string> = {
-  technical_it: "Technical / IT",
-  billing_fees: "Billing / Fees",
-  other: "Other",
-}
 
 const columns: ColumnDef<Ticket>[] = [
   {
     accessorKey: "subject",
     header: "Subject",
     meta: { truncate: true },
-    cell: ({ getValue }) => (
-      <span className="text-gray-900 font-medium">{getValue<string>()}</span>
+    cell: ({ getValue, row }) => (
+      <Link
+        to={`/tickets/${row.original.id}`}
+        className="link font-medium"
+      >
+        {getValue<string>()}
+      </Link>
     ),
   },
   {

@@ -128,3 +128,10 @@
     @apply font-sans;
     }
 }
+
+@layer utilities {
+  .link {
+    color: #1e3a5f;
+    &:hover { text-decoration: underline; }
+  }
+}
