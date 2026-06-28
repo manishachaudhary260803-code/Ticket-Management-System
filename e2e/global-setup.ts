@@ -1,5 +1,4 @@
 import { execSync } from "child_process"
-import os from "os"
 import path from "path"
 import { Client } from "pg"
 import { TEST_ADMIN, TEST_AGENT } from "./test-credentials"
@@ -26,16 +25,16 @@ async function ensureDatabase() {
       console.log(`[setup] Created test database: ${TEST_DB}`)
     } catch (err: any) {
       if (err.code === "42501") {
-        const username = os.userInfo().username
-        console.log(`[setup] No CREATEDB privilege — attempting: sudo -u postgres psql (enter your sudo password if prompted)`)
-        execSync(
-          `sudo -u postgres psql -h /var/run/postgresql -p 5432 -c "CREATE DATABASE ${TEST_DB} OWNER ${username}"`,
-          { stdio: "inherit" }
-        )
-        console.log(`[setup] Created test database: ${TEST_DB}`)
-      } else {
-        throw err
+        console.error(`
+[setup] Permission denied to create database.
+Run this once to grant CREATEDB to your user:
+  sudo -u postgres psql -c "ALTER USER $(whoami) CREATEDB"
+Or create the database manually:
+  sudo -u postgres psql -c "CREATE DATABASE ${TEST_DB} OWNER $(whoami)"
+        `.trim())
+        process.exit(1)
       }
+      throw err
     }
   }
   await client.end()

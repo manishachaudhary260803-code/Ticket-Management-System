@@ -3,6 +3,7 @@
   "private": true,
   "workspaces": ["core", "auth", "client"],
   "scripts": {
+    "pretest:e2e": "bash scripts/setup-test-db.sh",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
