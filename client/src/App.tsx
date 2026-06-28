@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import { authClient } from "@/lib/auth-client"
 import LoginPage from "./pages/LoginPage"
 import HomePage from "./pages/HomePage"
+import TicketsPage from "./pages/TicketsPage"
 import UsersPage from "./pages/UsersPage"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -54,6 +55,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <HomePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/tickets",
+    element: (
+      <ProtectedRoute>
+        <TicketsPage />
       </ProtectedRoute>
     ),
   },

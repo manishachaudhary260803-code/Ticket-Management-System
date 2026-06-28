@@ -20,3 +20,4 @@ export const editUserSchema = z.object({
 
 export type EditUserInput = z.input<typeof editUserSchema>
 export type EditUserOutput = z.output<typeof editUserSchema>
+
