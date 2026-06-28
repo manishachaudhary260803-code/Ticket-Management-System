@@ -108,6 +108,26 @@ Three services share one PostgreSQL database:
 - Dashboard metrics: ticket volume over time, open vs resolved counts, tickets by category, agent workload
 - Notifications: email to assigned agent when a ticket is assigned
 
+## Component Testing
+
+Component tests live in `client/src/` alongside their source files (e.g. `UsersPage.test.tsx` next to `UsersPage.tsx`). They use **Vitest** + **React Testing Library**.
+
+**Run commands (from `client/`):**
+```bash
+npm run test:components        # run all component tests once
+npm run test:components:watch  # watch mode for development
+npm run test:ui                # Vitest browser UI
+```
+
+**Writing tests — always follow these conventions:**
+- Use `renderWithQuery` from `src/test/render-with-query.tsx` instead of `render` directly — it wraps the component in `MemoryRouter` + `QueryClientProvider` with `retry: false`
+- Mock `axios` with `vi.mock('axios')` and set return values in `beforeEach` via `vi.mocked(axios.get).mockResolvedValue({ data: ... })`
+- Mock `authClient` with `vi.mock('../lib/auth-client', () => ({ authClient: { useSession: () => ({ data: { user: { ... } } }), signOut: vi.fn() } }))` to avoid real session calls
+- Prefer `screen.findByText(...)` (async) to wait for data to load; use `waitForElementToBeRemoved` when testing the transition out of a loading state
+- Set `retry: false` in `QueryClient` options (already handled by `renderWithQuery`) so failed queries surface errors immediately in tests
+
+**Setup file:** `src/test/setup.ts` — imports `@testing-library/jest-dom` for DOM matchers (`toBeInTheDocument`, `toHaveClass`, etc.)
+
 ## E2E Testing
 
 Playwright tests live in `e2e/`. Infrastructure is in place — use the **playwright-e2e-writer** agent to generate tests after implementing any significant feature or UI change.
