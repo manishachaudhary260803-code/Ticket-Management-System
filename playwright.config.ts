@@ -56,6 +56,7 @@ export default defineConfig({
         DATABASE_URL: TEST_DB_URL,
         CLIENT_URL: `http://localhost:${CLIENT_PORT}`,
         PORT: String(SERVER_PORT),
+        WEBHOOK_SECRET: "test-webhook-secret-e2e",
       },
     },
     {

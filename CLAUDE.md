@@ -116,7 +116,13 @@ Three services share one PostgreSQL database:
 - Dashboard metrics: ticket volume over time, open vs resolved counts, tickets by category, agent workload
 - Notifications: email to assigned agent when a ticket is assigned
 
-## Component Testing
+## Testing strategy
+
+**Default to component tests. Use E2E tests only when a component test cannot cover the behaviour.**
+
+Component tests are faster, more isolated, and easier to maintain. Reach for E2E only when the critical path spans multiple services (auth handshake, IMAP → DB → UI round-trips, webhook → ticket list visibility).
+
+### Component Testing
 
 Component tests live in `client/src/` alongside their source files (e.g. `UsersPage.test.tsx` next to `UsersPage.tsx`). They use **Vitest** + **React Testing Library**.
 
@@ -136,9 +142,11 @@ npm run test:ui                # Vitest browser UI
 
 **Setup file:** `src/test/setup.ts` — imports `@testing-library/jest-dom` for DOM matchers (`toBeInTheDocument`, `toHaveClass`, etc.)
 
-## E2E Testing
+### E2E Testing
 
-Playwright tests live in `e2e/`. Infrastructure is in place — use the **playwright-e2e-writer** agent to generate tests after implementing any significant feature or UI change.
+Reserve E2E tests for flows that genuinely require a running browser + all three services — login/session handling, cross-service side-effects (e.g. webhook creates ticket that appears in UI), and auth-gated redirects. Do not write E2E tests for component rendering, form validation, or anything a component test can cover.
+
+Playwright tests live in `e2e/`. Infrastructure is in place — use the **playwright-e2e-writer** agent when an E2E test is warranted.
 
 **Test database:** `ticket_db_test` (separate from `ticket_db`). Must exist before running tests:
 ```bash
@@ -167,7 +175,7 @@ npm run test:e2e:report    # open HTML report
 - Use `adminPage` / `agentPage` fixtures — they sign in automatically before the test body
 - Use `TEST_ADMIN` / `TEST_AGENT` from `e2e/test-credentials.ts` for any credential references; never hardcode
 
-**When to invoke the playwright-e2e-writer agent:** After completing a new page, user flow, auth change, or API endpoint. The agent reads the existing fixtures and credentials convention and generates tests that conform to the project patterns.
+**When to invoke the playwright-e2e-writer agent:** Only when a multi-service flow must be verified end-to-end (auth redirects, cross-service data flow). Not for individual page rendering or form behaviour.
 
 ## Fetching Up-to-Date Documentation
 
