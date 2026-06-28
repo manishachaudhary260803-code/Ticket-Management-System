@@ -4,12 +4,19 @@ AI-powered support ticket system that auto-classifies, routes, and drafts replie
 
 ## Stack
 
+**Shared** (`core/`)
+- npm workspace package (`@ticket/core`) — TypeScript source, no build step required
+- All Zod schemas shared between `client` and `auth` live here under `core/src/schemas/`
+- When adding a new form or validated endpoint, define the schema in `core` first, then import it in both consumers: `import { mySchema } from "@ticket/core"`
+- Types are inferred from schemas with `z.infer<typeof mySchema>` at the point of use
+
 **Frontend** (`client/`)
 - React 19 + TypeScript 6 + Vite 8
 - Tailwind CSS v4 (Vite plugin — no PostCSS config needed)
 - React Router v7
 - **axios** for all HTTP requests — always pass `{ withCredentials: true }` so the session cookie is sent
 - **TanStack Query** (`@tanstack/react-query`) for all server state — use `useQuery` for fetches; `QueryClientProvider` is mounted in `main.tsx`
+- **react-hook-form** + **Zod** (`@hookform/resolvers/zod`) for all forms — define a `z.object` schema, infer the type with `z.infer`, pass `zodResolver(schema)` to `useForm`
 
 **Auth sidecar** (`auth/`)
 - Express.js + Better Auth v1 + Drizzle ORM + `pg`

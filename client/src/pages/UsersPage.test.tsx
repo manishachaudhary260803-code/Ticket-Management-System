@@ -1,4 +1,5 @@
-import { screen, waitForElementToBeRemoved } from '@testing-library/react'
+import { screen, waitForElementToBeRemoved, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import axios from 'axios'
 import UsersPage from './UsersPage'
@@ -93,5 +94,35 @@ describe('UsersPage', () => {
     vi.mocked(axios.get).mockResolvedValue({ data: [] })
     renderPage()
     expect(await screen.findByText('No users found.')).toBeInTheDocument()
+  })
+
+  describe('Add User modal', () => {
+    async function openModal() {
+      renderPage()
+      await screen.findByText('Alice Admin')
+      await userEvent.click(screen.getByRole('button', { name: 'Add User' }))
+    }
+
+    it('shows the modal when "Add User" is clicked', async () => {
+      await openModal()
+      expect(screen.getByRole('heading', { name: 'Add User' })).toBeInTheDocument()
+    })
+
+    it('hides the modal when clicking outside it', async () => {
+      await openModal()
+      fireEvent.click(screen.getByTestId('modal-backdrop'))
+      expect(screen.queryByRole('heading', { name: 'Add User' })).not.toBeInTheDocument()
+    })
+
+    it('hides the modal when pressing Escape', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await screen.findByText('Alice Admin')
+      await user.click(screen.getByRole('button', { name: 'Add User' }))
+      expect(screen.getByRole('heading', { name: 'Add User' })).toBeInTheDocument()
+
+      await user.keyboard('{Escape}')
+      expect(screen.queryByRole('heading', { name: 'Add User' })).not.toBeInTheDocument()
+    })
   })
 })

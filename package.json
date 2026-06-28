@@ -1,6 +1,7 @@
 {
   "name": "ticket-management-system",
   "private": true,
+  "workspaces": ["core", "auth", "client"],
   "scripts": {
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
