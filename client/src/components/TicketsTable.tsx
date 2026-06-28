@@ -1,6 +1,14 @@
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  type ColumnDef,
+  type SortingState,
+} from "@tanstack/react-table"
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
-interface Ticket {
+export interface Ticket {
   id: string
   subject: string
   from_email: string
@@ -16,6 +24,8 @@ interface Props {
   isPending: boolean
   isError: boolean
   errorMessage: string | null
+  sorting: SortingState
+  onSortingChange: (s: SortingState) => void
 }
 
 const statusStyles: Record<string, string> = {
@@ -36,39 +46,96 @@ const categoryLabels: Record<string, string> = {
   other: "Other",
 }
 
-const headers = (
-  <tr>
-    <th className="px-4 py-3 text-left font-medium text-gray-500">Subject</th>
-    <th className="px-4 py-3 text-left font-medium text-gray-500">From</th>
-    <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
-    <th className="px-4 py-3 text-left font-medium text-gray-500">Priority</th>
-    <th className="px-4 py-3 text-left font-medium text-gray-500">Category</th>
-    <th className="px-4 py-3 text-left font-medium text-gray-500">Received</th>
-  </tr>
-)
+const columns: ColumnDef<Ticket>[] = [
+  {
+    accessorKey: "subject",
+    header: "Subject",
+    meta: { truncate: true },
+    cell: ({ getValue }) => (
+      <span className="text-gray-900 font-medium">{getValue<string>()}</span>
+    ),
+  },
+  {
+    id: "from",
+    header: "From",
+    enableSorting: false,
+    meta: { truncate: true },
+    cell: ({ row }) => (
+      <>
+        <span className="block">{row.original.from_name || row.original.from_email}</span>
+        {row.original.from_name && (
+          <span className="block text-xs text-gray-400">{row.original.from_email}</span>
+        )}
+      </>
+    ),
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ getValue }) => {
+      const v = getValue<string>()
+      return (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusStyles[v] ?? "bg-gray-100 text-gray-600"}`}>
+          {v.replace("_", " ")}
+        </span>
+      )
+    },
+  },
+  {
+    accessorKey: "priority",
+    header: "Priority",
+    cell: ({ getValue }) => {
+      const v = getValue<string>()
+      return (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${priorityStyles[v] ?? "bg-gray-100 text-gray-600"}`}>
+          {v}
+        </span>
+      )
+    },
+  },
+  {
+    accessorKey: "category",
+    header: "Category",
+    cell: ({ getValue }) => {
+      const v = getValue<string>()
+      return <span className="text-gray-600">{categoryLabels[v] ?? v}</span>
+    },
+  },
+  {
+    accessorKey: "created_at",
+    header: "Received",
+    cell: ({ getValue }) => (
+      <span className="text-gray-500">
+        {new Date(getValue<string>()).toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })}
+      </span>
+    ),
+  },
+]
 
-export default function TicketsTable({ tickets, isPending, isError, errorMessage }: Props) {
-  if (isPending) {
-    return (
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">{headers}</thead>
-          <tbody className="divide-y divide-gray-100">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <tr key={i}>
-                <td className="px-4 py-3"><Skeleton className="h-4 w-48" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-4 w-36" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-5 w-16 rounded" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-5 w-14 rounded" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )
-  }
+function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
+  if (isSorted === "asc") return <ChevronUp className="inline w-3.5 h-3.5 ml-1" />
+  if (isSorted === "desc") return <ChevronDown className="inline w-3.5 h-3.5 ml-1" />
+  return <ChevronsUpDown className="inline w-3.5 h-3.5 ml-1 text-gray-300" />
+}
+
+const SKELETON_COLS = 6
+
+export default function TicketsTable({ tickets, isPending, isError, errorMessage, sorting, onSortingChange }: Props) {
+  const table = useReactTable({
+    data: tickets,
+    columns,
+    state: { sorting },
+    onSortingChange: (updater) => {
+      const next = typeof updater === "function" ? updater(sorting) : updater
+      onSortingChange(next)
+    },
+    manualSorting: true,
+    getCoreRowModel: getCoreRowModel(),
+  })
 
   if (isError) {
     return (
@@ -79,50 +146,58 @@ export default function TicketsTable({ tickets, isPending, isError, errorMessage
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-gray-50 border-b border-gray-200">{headers}</thead>
-        <tbody className="divide-y divide-gray-100">
-          {tickets.map((ticket) => (
-            <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-3 text-gray-900 font-medium max-w-xs truncate">
-                {ticket.subject}
-              </td>
-              <td className="px-4 py-3 text-gray-600">
-                <span className="block">{ticket.from_name || ticket.from_email}</span>
-                {ticket.from_name && (
-                  <span className="block text-xs text-gray-400">{ticket.from_email}</span>
-                )}
-              </td>
-              <td className="px-4 py-3">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusStyles[ticket.status] ?? "bg-gray-100 text-gray-600"}`}>
-                  {ticket.status.replace("_", " ")}
-                </span>
-              </td>
-              <td className="px-4 py-3">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${priorityStyles[ticket.priority] ?? "bg-gray-100 text-gray-600"}`}>
-                  {ticket.priority}
-                </span>
-              </td>
-              <td className="px-4 py-3 text-gray-600">
-                {categoryLabels[ticket.category] ?? ticket.category}
-              </td>
-              <td className="px-4 py-3 text-gray-500">
-                {new Date(ticket.created_at).toLocaleDateString(undefined, {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </td>
+        <thead className="bg-gray-50 border-b border-gray-200">
+          {table.getHeaderGroups().map((hg) => (
+            <tr key={hg.id}>
+              {hg.headers.map((header) => {
+                const canSort = header.column.getCanSort()
+                return (
+                  <th
+                    key={header.id}
+                    className={`px-4 py-3 text-left font-medium text-gray-500 select-none ${canSort ? "cursor-pointer hover:text-gray-700" : ""}`}
+                    onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {canSort && <SortIcon isSorted={header.column.getIsSorted()} />}
+                  </th>
+                )
+              })}
             </tr>
           ))}
-          {tickets.length === 0 && (
-            <tr>
-              <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
-                No tickets yet.
-              </td>
-            </tr>
-          )}
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {isPending
+            ? Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i}>
+                  {Array.from({ length: SKELETON_COLS }).map((_, j) => (
+                    <td key={j} className="px-4 py-3">
+                      <Skeleton className="h-4 w-24" />
+                    </td>
+                  ))}
+                </tr>
+              ))
+            : table.getRowModel().rows.length === 0
+            ? (
+                <tr>
+                  <td colSpan={SKELETON_COLS} className="px-4 py-6 text-center text-gray-400">
+                    No tickets yet.
+                  </td>
+                </tr>
+              )
+            : table.getRowModel().rows.map((row) => (
+                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                  {row.getVisibleCells().map((cell) => {
+                    const truncate = (cell.column.columnDef.meta as { truncate?: boolean } | undefined)?.truncate
+                    return (
+                      <td key={cell.id} className={`px-4 py-3${truncate ? " max-w-xs truncate" : " whitespace-nowrap"}`}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
         </tbody>
       </table>
     </div>

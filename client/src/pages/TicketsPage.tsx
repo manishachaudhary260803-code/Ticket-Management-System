@@ -1,29 +1,72 @@
+import { useState } from "react"
 import axios from "axios"
 import { useQuery } from "@tanstack/react-query"
+import type { SortingState } from "@tanstack/react-table"
 import Navbar from "../components/Navbar"
-import TicketsTable from "../components/TicketsTable"
+import TicketsTable, { type Ticket } from "../components/TicketsTable"
+import TicketFilterBar, { type TicketFilters, EMPTY_FILTERS } from "../components/TicketFilterBar"
+import TicketPagination from "../components/TicketPagination"
 
-interface Ticket {
-  id: string
-  subject: string
-  from_email: string
-  from_name: string | null
-  status: string
-  priority: string
-  category: string
-  created_at: string
+interface PaginatedTickets {
+  items: Ticket[]
+  total: number
+  page: number
+  page_size: number
 }
 
-async function fetchTickets(): Promise<Ticket[]> {
-  const res = await axios.get<Ticket[]>("/api/tickets", { withCredentials: true })
+async function fetchTickets(
+  sorting: SortingState,
+  filters: TicketFilters,
+  page: number,
+  pageSize: number,
+): Promise<PaginatedTickets> {
+  const params = new URLSearchParams()
+  if (sorting.length > 0) {
+    params.set("sort_by", sorting[0].id)
+    params.set("sort_dir", sorting[0].desc ? "desc" : "asc")
+  }
+  if (filters.search) params.set("search", filters.search)
+  filters.status.forEach((s) => params.append("status", s))
+  filters.priority.forEach((p) => params.append("priority", p))
+  filters.category.forEach((c) => params.append("category", c))
+  params.set("page", String(page))
+  params.set("page_size", String(pageSize))
+
+  const res = await axios.get<PaginatedTickets>("/api/tickets", {
+    withCredentials: true,
+    params,
+  })
   return res.data
 }
 
 export default function TicketsPage() {
-  const { data: tickets = [], isPending, isError, error } = useQuery({
-    queryKey: ["tickets"],
-    queryFn: fetchTickets,
+  const [sorting, setSorting] = useState<SortingState>([{ id: "created_at", desc: true }])
+  const [filters, setFilters] = useState<TicketFilters>(EMPTY_FILTERS)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+
+  function handleSortingChange(s: SortingState) {
+    setSorting(s)
+    setPage(1)
+  }
+
+  function handleFiltersChange(f: TicketFilters) {
+    setFilters(f)
+    setPage(1)
+  }
+
+  function handlePageSizeChange(ps: number) {
+    setPageSize(ps)
+    setPage(1)
+  }
+
+  const { data, isPending, isError, error } = useQuery({
+    queryKey: ["tickets", sorting, filters, page, pageSize],
+    queryFn: () => fetchTickets(sorting, filters, page, pageSize),
   })
+
+  const tickets = data?.items ?? []
+  const total = data?.total ?? 0
 
   const errorMessage = isError
     ? axios.isAxiosError(error)
@@ -34,17 +77,31 @@ export default function TicketsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="max-w-5xl mx-auto px-6 py-10">
+      <main className="max-w-7xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-800">Tickets</h2>
         </div>
+
+        <TicketFilterBar filters={filters} onChange={handleFiltersChange} />
 
         <TicketsTable
           tickets={tickets}
           isPending={isPending}
           isError={isError}
           errorMessage={errorMessage}
+          sorting={sorting}
+          onSortingChange={handleSortingChange}
         />
+
+        {!isError && (
+          <TicketPagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        )}
       </main>
     </div>
   )
