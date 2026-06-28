@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session as DBSession
 from app.auth import get_current_user
 from app.database import get_db
 from app.models.ticket import Category, Priority, Ticket, TicketStatus
-from app.models.user import User
+from app.models.user import Role, User
 
 _SORTABLE = {
     "subject": Ticket.subject,
@@ -86,4 +86,32 @@ def get_ticket(
     ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
+    return ticket
+
+
+class TicketAssign(BaseModel):
+    assignee_id: str | None
+
+
+@router.patch("/{ticket_id}/assign", response_model=TicketOut)
+def assign_ticket(
+    ticket_id: str,
+    body: TicketAssign,
+    db: DBSession = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    if body.assignee_id is not None:
+        agent = (
+            db.query(User)
+            .filter(User.id == body.assignee_id, User.role == Role.agent, User.deleted_at == None)
+            .first()
+        )
+        if not agent:
+            raise HTTPException(status_code=400, detail="assignee_id must be a valid agent")
+    ticket.assignee_id = body.assignee_id
+    db.commit()
+    db.refresh(ticket)
     return ticket
