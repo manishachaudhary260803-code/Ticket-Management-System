@@ -8,6 +8,8 @@ AI-powered support ticket system that auto-classifies, routes, and drafts replie
 - React 19 + TypeScript 6 + Vite 8
 - Tailwind CSS v4 (Vite plugin — no PostCSS config needed)
 - React Router v7
+- **axios** for all HTTP requests — always pass `{ withCredentials: true }` so the session cookie is sent
+- **TanStack Query** (`@tanstack/react-query`) for all server state — use `useQuery` for fetches; `QueryClientProvider` is mounted in `main.tsx`
 
 **Auth sidecar** (`auth/`)
 - Express.js + Better Auth v1 + Drizzle ORM + `pg`
@@ -106,6 +108,39 @@ Three services share one PostgreSQL database:
 - Dashboard metrics: ticket volume over time, open vs resolved counts, tickets by category, agent workload
 - Notifications: email to assigned agent when a ticket is assigned
 
+## E2E Testing
+
+Playwright tests live in `e2e/`. Infrastructure is in place — use the **playwright-e2e-writer** agent to generate tests after implementing any significant feature or UI change.
+
+**Test database:** `ticket_db_test` (separate from `ticket_db`). Must exist before running tests:
+```bash
+sudo -u postgres psql -c "CREATE DATABASE ticket_db_test OWNER enjay"
+```
+Global setup handles schema migrations and seeding automatically.
+
+**Test ports (never conflict with dev):**
+
+| Service | Dev | Test |
+|---------|-----|------|
+| Client (Vite) | 5173 | 5174 |
+| Auth (Express) | 3001 | 3011 |
+| FastAPI | 3000 | 3010 |
+
+**Run commands:**
+```bash
+npm run test:e2e           # headless
+npm run test:e2e:ui        # Playwright UI mode
+npm run test:e2e:headed    # visible browser
+npm run test:e2e:report    # open HTML report
+```
+
+**Writing tests — always follow these conventions:**
+- Import `test` and `expect` from `e2e/fixtures.ts` (not directly from `@playwright/test`)
+- Use `adminPage` / `agentPage` fixtures — they sign in automatically before the test body
+- Use `TEST_ADMIN` / `TEST_AGENT` from `e2e/test-credentials.ts` for any credential references; never hardcode
+
+**When to invoke the playwright-e2e-writer agent:** After completing a new page, user flow, auth change, or API endpoint. The agent reads the existing fixtures and credentials convention and generates tests that conform to the project patterns.
+
 ## Fetching Up-to-Date Documentation
 
 Use the **context7** MCP server to pull current docs before working with any library:
@@ -122,6 +157,8 @@ Key libraries to always fetch fresh docs for:
 - vite
 - better-auth
 - drizzle-orm
+- axios
+- @tanstack/react-query
 ```
 
 Prefer context7 over training-data recall for any API surface, config format, or migration guide — especially for Tailwind v4, React Router v7, and React 19, which all have recent breaking changes.

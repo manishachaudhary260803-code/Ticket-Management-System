@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
+from app.routers.users import router as users_router
+
 load_dotenv()
 
 app = FastAPI(title="Ticket Management System")
@@ -14,6 +16,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(users_router)
 
 
 @app.get("/api/health")
