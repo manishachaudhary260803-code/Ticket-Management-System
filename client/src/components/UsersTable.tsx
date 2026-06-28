@@ -1,4 +1,4 @@
-import { Pencil } from "lucide-react"
+import { Pencil, Trash2 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 
@@ -17,9 +17,10 @@ interface Props {
   isError: boolean
   errorMessage: string | null
   onEdit: (user: User) => void
+  onDelete: (user: User) => void
 }
 
-export default function UsersTable({ users, isPending, isError, errorMessage, onEdit }: Props) {
+export default function UsersTable({ users, isPending, isError, errorMessage, onEdit, onDelete }: Props) {
   const headers = (
     <tr>
       <th className="px-4 py-3 text-left font-medium text-gray-500">Name</th>
@@ -87,14 +88,27 @@ export default function UsersTable({ users, isPending, isError, errorMessage, on
                 })}
               </td>
               <td className="px-4 py-3 text-right">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-label={`Edit ${user.name}`}
-                  onClick={() => onEdit(user)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Edit ${user.name}`}
+                    onClick={() => onEdit(user)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  {user.role !== "admin" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Delete ${user.name}`}
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => onDelete(user)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

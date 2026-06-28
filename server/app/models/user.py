@@ -25,6 +25,7 @@ class User(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+    deleted_at = Column(DateTime(timezone=True), nullable=True, default=None)
 
     tickets = relationship("Ticket", back_populates="assignee")
     sessions = relationship("Session", back_populates="user")

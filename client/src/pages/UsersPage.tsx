@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import UsersTable from "../components/UsersTable"
 import CreateUserModal from "../components/CreateUserModal"
 import EditUserModal from "../components/EditUserModal"
+import DeleteUserModal from "../components/DeleteUserModal"
 
 interface User {
   id: string
@@ -16,14 +17,18 @@ interface User {
   created_at: string
 }
 
+type Dialog =
+  | { mode: "create" }
+  | { mode: "edit"; user: User }
+  | { mode: "delete"; user: User }
+
 async function fetchUsers(): Promise<User[]> {
   const res = await axios.get<User[]>("/api/users", { withCredentials: true })
   return res.data
 }
 
 export default function UsersPage() {
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [dialog, setDialog] = useState<Dialog | null>(null)
 
   const { data: users = [], isPending, isError, error } = useQuery({
     queryKey: ["users"],
@@ -42,7 +47,7 @@ export default function UsersPage() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-800">Users</h2>
-          <Button onClick={() => setShowCreateModal(true)} size="sm">
+          <Button onClick={() => setDialog({ mode: "create" })} size="sm">
             Add User
           </Button>
         </div>
@@ -52,15 +57,24 @@ export default function UsersPage() {
           isPending={isPending}
           isError={isError}
           errorMessage={errorMessage}
-          onEdit={setEditingUser}
+          onEdit={(user) => setDialog({ mode: "edit", user })}
+          onDelete={(user) => setDialog({ mode: "delete", user })}
         />
       </main>
 
-      <CreateUserModal open={showCreateModal} onClose={() => setShowCreateModal(false)} />
+      <CreateUserModal
+        open={dialog?.mode === "create"}
+        onClose={() => setDialog(null)}
+      />
       <EditUserModal
-        open={editingUser !== null}
-        user={editingUser}
-        onClose={() => setEditingUser(null)}
+        open={dialog?.mode === "edit"}
+        user={dialog?.mode === "edit" ? dialog.user : null}
+        onClose={() => setDialog(null)}
+      />
+      <DeleteUserModal
+        open={dialog?.mode === "delete"}
+        user={dialog?.mode === "delete" ? dialog.user : null}
+        onClose={() => setDialog(null)}
       />
     </div>
   )

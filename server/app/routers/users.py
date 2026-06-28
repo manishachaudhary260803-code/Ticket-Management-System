@@ -28,4 +28,4 @@ def list_users(
     db: DBSession = Depends(get_db),
     _admin: User = Depends(require_admin),
 ):
-    return db.query(User).order_by(User.created_at).all()
+    return db.query(User).filter(User.deleted_at == None).order_by(User.created_at).all()

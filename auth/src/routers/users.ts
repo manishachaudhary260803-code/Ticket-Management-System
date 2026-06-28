@@ -107,4 +107,21 @@ router.patch("/:id", express.json(), async (req, res) => {
   res.status(200).json(updated)
 })
 
+router.delete("/:id", async (req, res) => {
+  if (!await requireAdmin(req, res)) return
+
+  const { id } = req.params
+  const [target] = await db
+    .select({ id: user.id, role: user.role, deletedAt: user.deletedAt })
+    .from(user)
+    .where(eq(user.id, id))
+    .limit(1)
+
+  if (!target || target.deletedAt !== null) { res.status(404).json({ error: "User not found" }); return }
+  if (target.role === "admin") { res.status(403).json({ error: "Admin users cannot be deleted" }); return }
+
+  await db.update(user).set({ deletedAt: new Date() }).where(eq(user.id, id))
+  res.status(200).json({ success: true })
+})
+
 export default router

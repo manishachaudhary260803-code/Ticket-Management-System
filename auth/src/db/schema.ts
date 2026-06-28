@@ -16,6 +16,7 @@ export const user = pgTable("users", {
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
   role: roleEnum("role").notNull().default("agent"),
+  deletedAt: timestamp("deleted_at"),
 })
 
 export const session = pgTable("sessions", {
