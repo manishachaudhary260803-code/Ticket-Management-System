@@ -19,6 +19,9 @@ def get_current_user(
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    # Better Auth appends ".signature" to the cookie value; the DB stores only the token part
+    token = token.split(".")[0]
+
     session = db.query(Session).filter(Session.token == token).first()
     if not session:
         raise HTTPException(status_code=401, detail="Invalid session")

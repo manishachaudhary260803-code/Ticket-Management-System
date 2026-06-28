@@ -12,7 +12,7 @@ export default function Navbar() {
 
   return (
     <nav className="h-14 bg-[#1e3a5f] flex items-center justify-between px-6">
-      <span className="font-semibold text-white">Ticket Management</span>
+      <Link to="/" className="font-semibold text-white hover:text-blue-200 transition-colors">Ticket Management</Link>
 
       <div className="flex items-center gap-4">
         {session?.user?.role === "admin" && (
