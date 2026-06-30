@@ -145,7 +145,19 @@ npm run test:ui                # Vitest browser UI
 
 ### E2E Testing
 
-Reserve E2E tests for flows that genuinely require a running browser + all three services — login/session handling, cross-service side-effects (e.g. webhook creates ticket that appears in UI), and auth-gated redirects. Do not write E2E tests for component rendering, form validation, or anything a component test can cover.
+**Rule: E2E tests are only for behaviour that cannot be tested with component tests.** If a component test can cover it, it must be a component test — not E2E. When reviewing or writing tests, remove any E2E test that duplicates component-test coverage.
+
+**Keep as E2E** (requires real browser + all three services):
+- Auth flows: successful login/logout, session cookie persistence, protected-route redirects, role-based routing guards
+- Server-side auth errors: wrong password, non-existent user (needs real Better Auth service)
+- Cross-service writes verified in the UI: create/edit/delete user (React → auth service → DB → table refresh), webhook → ticket visible in list
+- Webhook API behaviour: auth headers, validation, DB persistence
+
+**Never write E2E tests for:**
+- Component rendering (loading states, data display, empty states, table structure)
+- Client-side form validation (Zod errors for empty/invalid fields)
+- Navbar link visibility based on role
+- Anything that can be tested by mocking axios and the auth session
 
 Playwright tests live in `e2e/`. Infrastructure is in place — use the **playwright-e2e-writer** agent when an E2E test is warranted.
 

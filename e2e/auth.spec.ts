@@ -1,7 +1,10 @@
 /**
- * Auth E2E tests — covers login form validation, successful sign-in,
+ * Auth E2E tests — covers server-side login errors, successful sign-in,
  * session persistence, protected-route redirects, role-based access,
  * and sign-out.
+ *
+ * Client-side form validation (empty fields, invalid email format) is covered
+ * by LoginPage component tests and does not belong here.
  *
  * NOTE: The root/server error paragraph is selected via
  * `p.text-sm.text-destructive` (the `bg-destructive/10` container).
@@ -13,62 +16,10 @@ import { test, expect } from "./fixtures"
 import { TEST_ADMIN, TEST_AGENT } from "./test-credentials"
 
 // ---------------------------------------------------------------------------
-// Login form — client-side validation
+// Login — server-side errors (require real Better Auth service)
 // ---------------------------------------------------------------------------
 
-test.describe("Login form validation", () => {
-  test("submitting empty form shows field errors for email and password", async ({ page }) => {
-    await page.goto("/login")
-
-    await page.getByRole("button", { name: "Sign in" }).click()
-
-    // Both field-level errors must appear simultaneously
-    await expect(page.getByText("Enter a valid email address")).toBeVisible()
-    await expect(page.getByText("Password is required")).toBeVisible()
-
-    // Must stay on the login page — no navigation occurred
-    await expect(page).toHaveURL("/login")
-  })
-
-  test("invalid email format shows email field error and makes no server request", async ({
-    page,
-  }) => {
-    await page.goto("/login")
-
-    // Track whether any sign-in request was dispatched
-    let signInRequestMade = false
-    await page.route("**/sign-in/email**", (route) => {
-      signInRequestMade = true
-      route.continue()
-    })
-
-    await page.locator("#email").fill("notanemail")
-    await page.locator("#password").fill("somepassword")
-    await page.getByRole("button", { name: "Sign in" }).click()
-
-    await expect(page.getByText("Enter a valid email address")).toBeVisible()
-    // Password field is valid so its error must not appear
-    await expect(page.getByText("Password is required")).not.toBeVisible()
-    // Zod rejected the form before any fetch was dispatched
-    expect(signInRequestMade).toBe(false)
-
-    await expect(page).toHaveURL("/login")
-  })
-
-  test("valid email with empty password shows password field error", async ({ page }) => {
-    await page.goto("/login")
-
-    await page.locator("#email").fill("user@example.com")
-    // Password field is intentionally left empty
-    await page.getByRole("button", { name: "Sign in" }).click()
-
-    await expect(page.getByText("Password is required")).toBeVisible()
-    // Email is valid so its error must not appear
-    await expect(page.getByText("Enter a valid email address")).not.toBeVisible()
-
-    await expect(page).toHaveURL("/login")
-  })
-
+test.describe("Login — server-side errors", () => {
   test("correct email with wrong password shows server error message", async ({ page }) => {
     await page.goto("/login")
 

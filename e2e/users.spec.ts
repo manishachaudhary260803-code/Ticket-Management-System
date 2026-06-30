@@ -1,8 +1,13 @@
 /**
- * Users page — happy-path E2E tests for all four CRUD operations.
+ * Users page — E2E tests for CRUD operations that span the auth service and DB.
  *
- * The Users page is admin-only.  The adminPage fixture signs in as admin
- * before each test body runs.
+ * Component rendering (loading state, user list display, role badges, dates)
+ * and modal open/close behaviour are covered by UsersPage and CreateUserModal
+ * component tests and do not belong here.
+ *
+ * Only the full create → persist → appear-in-table flow (and the equivalent
+ * for edit and delete) requires a real auth service + real DB, so only those
+ * live here.
  *
  * Modal discovery strategy
  * ------------------------
@@ -12,9 +17,6 @@
  *   Edit    →  data-testid="edit-modal-backdrop"
  *   Delete  →  data-testid="delete-modal-backdrop"
  *
- * When a modal unmounts (component returns null), Playwright's
- * not.toBeVisible() assertion correctly passes for missing elements.
- *
  * Test isolation
  * --------------
  * Each mutating test creates its own user with a timestamp-derived email so
@@ -22,7 +24,6 @@
  */
 
 import { test, expect } from "./fixtures"
-import { TEST_ADMIN } from "./test-credentials"
 
 /** Returns unique user data for a single test run. */
 function makeUser() {
@@ -57,23 +58,6 @@ async function createUserViaModal(
   // Wait for the new row to appear in the table
   await expect(adminPage.getByText(user.email)).toBeVisible()
 }
-
-// ---------------------------------------------------------------------------
-// Read
-// ---------------------------------------------------------------------------
-
-test.describe("Users page — Read", () => {
-  test("table renders and shows the seeded admin user", async ({ adminPage }) => {
-    await adminPage.goto("/users")
-
-    // The table element itself must be present
-    await expect(adminPage.getByRole("table")).toBeVisible()
-
-    // The seeded admin user (TEST_ADMIN) is always in the list
-    await expect(adminPage.getByText(TEST_ADMIN.name)).toBeVisible()
-    await expect(adminPage.getByText(TEST_ADMIN.email)).toBeVisible()
-  })
-})
 
 // ---------------------------------------------------------------------------
 // Create
