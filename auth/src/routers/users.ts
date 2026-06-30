@@ -1,7 +1,7 @@
 import express from "express"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { createUserSchema, editUserSchema } from "@ticket/core"
 import { hashPassword } from "@better-auth/utils/password"
 import { db } from "../db"
@@ -121,6 +121,7 @@ router.delete("/:id", async (req, res) => {
   if (target.role === "admin") { res.status(403).json({ error: "Admin users cannot be deleted" }); return }
 
   await db.update(user).set({ deletedAt: new Date() }).where(eq(user.id, id))
+  await db.execute(sql`UPDATE tickets SET assignee_id = NULL WHERE assignee_id = ${id}`)
   res.status(200).json({ success: true })
 })
 

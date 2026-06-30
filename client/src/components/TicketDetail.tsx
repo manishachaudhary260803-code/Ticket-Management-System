@@ -1,10 +1,12 @@
 import axios from "axios"
+import DOMPurify from "dompurify"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Send } from "lucide-react"
+import { Send, Sparkles } from "lucide-react"
 import { useRef, useState } from "react"
 import { DetailSection } from "@/components/DetailSection"
 import { Skeleton } from "@/components/ui/skeleton"
 import { priorityStyles } from "@/lib/ticket-utils"
+import { authClient } from "@/lib/auth-client"
 
 interface Ticket {
   id: string
@@ -146,14 +148,29 @@ function ReplyCard({ reply }: { reply: Reply }) {
         </div>
         <span className="text-xs text-gray-400">{formatDateTime(reply.created_at)}</span>
       </div>
-      <pre className="text-gray-700">{reply.body}</pre>
+      <div
+        className="text-sm text-gray-700 prose prose-sm max-w-none"
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.body) }}
+      />
     </div>
   )
 }
 
+async function polishReply(draft: string, agentName: string, customerFirstName?: string): Promise<string> {
+  const res = await axios.post<{ polished: string }>(
+    "/api/auth/ai/polish-reply",
+    { draft, agent_name: agentName, customer_first_name: customerFirstName },
+    { withCredentials: true },
+  )
+  return res.data.polished
+}
+
 export default function TicketDetail({ id }: { id: string }) {
   const queryClient = useQueryClient()
+  const { data: session } = authClient.useSession()
   const [replyBody, setReplyBody] = useState("")
+  const [isPolishing, setIsPolishing] = useState(false)
+  const [polishError, setPolishError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const { data: ticket, isPending, isError, error } = useQuery({
@@ -195,6 +212,25 @@ export default function TicketDetail({ id }: { id: string }) {
     e.preventDefault()
     if (!replyBody.trim() || replyMutation.isPending) return
     replyMutation.mutate(replyBody)
+  }
+
+  async function handlePolish() {
+    if (!replyBody.trim() || isPolishing) return
+    setPolishError(null)
+    setIsPolishing(true)
+    try {
+      const customerFirstName = ticket!.from_name?.split(" ")[0]
+      const polished = await polishReply(replyBody, session?.user.name ?? "Support Team", customerFirstName)
+      setReplyBody(polished)
+    } catch (err) {
+      setPolishError(
+        axios.isAxiosError(err)
+          ? (err.response?.data?.error ?? err.message)
+          : "Failed to polish reply"
+      )
+    } finally {
+      setIsPolishing(false)
+    }
   }
 
   const errorMessage = isError
@@ -265,17 +301,28 @@ export default function TicketDetail({ id }: { id: string }) {
               rows={4}
               className="w-full text-sm border border-gray-200 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1e3a5f] resize-none"
             />
-            {replyMutation.isError && (
+            {(replyMutation.isError || polishError) && (
               <p className="text-xs text-red-600">
-                {axios.isAxiosError(replyMutation.error)
-                  ? (replyMutation.error.response?.data?.detail ?? replyMutation.error.message)
-                  : "Failed to send reply"}
+                {polishError
+                  ? polishError
+                  : axios.isAxiosError(replyMutation.error)
+                    ? (replyMutation.error.response?.data?.detail ?? replyMutation.error.message)
+                    : "Failed to send reply"}
               </p>
             )}
-            <div className="flex justify-start">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePolish}
+                disabled={!replyBody.trim() || isPolishing || replyMutation.isPending}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[#1e3a5f] bg-white border border-[#1e3a5f] rounded-lg hover:bg-[#1e3a5f]/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {isPolishing ? "Polishing…" : "Polish"}
+              </button>
               <button
                 type="submit"
-                disabled={!replyBody.trim() || replyMutation.isPending}
+                disabled={!replyBody.trim() || replyMutation.isPending || isPolishing}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#1e3a5f] rounded-lg hover:bg-[#162e4d] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="w-3.5 h-3.5" />
