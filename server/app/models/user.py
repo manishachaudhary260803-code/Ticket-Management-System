@@ -29,3 +29,4 @@ class User(Base):
 
     tickets = relationship("Ticket", back_populates="assignee")
     sessions = relationship("Session", back_populates="user")
+    replies = relationship("TicketReply", back_populates="author")

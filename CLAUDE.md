@@ -50,6 +50,7 @@ alembic upgrade head           # run migrations
 
 ```
 client/src/          React app
+  components/DetailSection.tsx  reusable labeled card section (variants: default/blue/amber)
   lib/auth-client.ts createAuthClient() — points at VITE_AUTH_URL (proxied to :3001)
 auth/src/
   auth.ts            Better Auth config (emailAndPassword, role field, trustedOrigins)

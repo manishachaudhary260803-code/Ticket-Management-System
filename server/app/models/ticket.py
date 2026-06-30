@@ -6,6 +6,25 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 
 
+class SenderType(str, enum.Enum):
+    agent = "agent"
+    customer = "customer"
+
+
+class TicketReply(Base):
+    __tablename__ = "ticket_replies"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    ticket_id = Column(String, ForeignKey("tickets.id"), nullable=False, index=True)
+    author_id = Column(String, ForeignKey("users.id"), nullable=True)
+    body = Column(Text, nullable=False)
+    sender_type = Column(Enum(SenderType), nullable=False, default=SenderType.agent)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    ticket = relationship("Ticket", back_populates="replies")
+    author = relationship("User")
+
+
 class TicketStatus(str, enum.Enum):
     open = "open"
     in_progress = "in_progress"
@@ -47,3 +66,4 @@ class Ticket(Base):
     )
 
     assignee = relationship("User", back_populates="tickets")
+    replies = relationship("TicketReply", back_populates="ticket", order_by="TicketReply.created_at")

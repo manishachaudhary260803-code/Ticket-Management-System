@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session as DBSession
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models.ticket import Category, Priority, Ticket, TicketStatus
-from app.models.user import Role, User
+from app.models.ticket import Category, Priority, SenderType, Ticket, TicketReply, TicketStatus
+from app.models.user import User
 
 _SORTABLE = {
     "subject": Ticket.subject,
@@ -89,6 +89,30 @@ def get_ticket(
     return ticket
 
 
+class TicketUpdate(BaseModel):
+    status: TicketStatus | None = None
+    category: Category | None = None
+
+
+@router.patch("/{ticket_id}", response_model=TicketOut)
+def update_ticket(
+    ticket_id: str,
+    body: TicketUpdate,
+    db: DBSession = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    if body.status is not None:
+        ticket.status = body.status
+    if body.category is not None:
+        ticket.category = body.category
+    db.commit()
+    db.refresh(ticket)
+    return ticket
+
+
 class TicketAssign(BaseModel):
     assignee_id: str | None
 
@@ -104,14 +128,74 @@ def assign_ticket(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     if body.assignee_id is not None:
-        agent = (
+        user = (
             db.query(User)
-            .filter(User.id == body.assignee_id, User.role == Role.agent, User.deleted_at == None)
+            .filter(User.id == body.assignee_id, User.deleted_at == None)
             .first()
         )
-        if not agent:
-            raise HTTPException(status_code=400, detail="assignee_id must be a valid agent")
+        if not user:
+            raise HTTPException(status_code=400, detail="assignee_id must be a valid user")
     ticket.assignee_id = body.assignee_id
     db.commit()
     db.refresh(ticket)
     return ticket
+
+
+class ReplyAuthorOut(BaseModel):
+    id: str
+    name: str
+
+    class Config:
+        from_attributes = True
+
+
+class ReplyOut(BaseModel):
+    id: str
+    ticket_id: str
+    sender_type: SenderType
+    author: ReplyAuthorOut | None
+    body: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ReplyCreate(BaseModel):
+    body: str
+
+
+@router.get("/{ticket_id}/replies", response_model=list[ReplyOut])
+def list_replies(
+    ticket_id: str,
+    db: DBSession = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return ticket.replies
+
+
+@router.post("/{ticket_id}/replies", response_model=ReplyOut, status_code=201)
+def create_reply(
+    ticket_id: str,
+    body: ReplyCreate,
+    db: DBSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    if not body.body.strip():
+        raise HTTPException(status_code=422, detail="Reply body cannot be empty")
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    reply = TicketReply(
+        ticket_id=ticket_id,
+        author_id=user.id,
+        body=body.body,
+        sender_type=SenderType.agent,
+    )
+    db.add(reply)
+    db.commit()
+    db.refresh(reply)
+    return reply
