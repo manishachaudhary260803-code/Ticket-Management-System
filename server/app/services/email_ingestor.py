@@ -141,7 +141,7 @@ def poll_mailbox(loop: asyncio.AbstractEventLoop) -> int:
                 db.add(ticket)
                 db.commit()
                 asyncio.run_coroutine_threadsafe(
-                    classify_ticket(ticket.id, ticket.subject, ticket.body), loop
+                    classify_ticket(ticket.id, ticket.subject, ticket.body, ticket.from_name), loop
                 )
                 imap.store(uid, "+FLAGS", "\\Seen")
                 created += 1

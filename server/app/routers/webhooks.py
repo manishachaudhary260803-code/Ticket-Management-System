@@ -71,5 +71,5 @@ def create_ticket_via_webhook(
     db.add(ticket)
     db.commit()
     db.refresh(ticket)
-    background_tasks.add_task(classify_ticket, ticket.id, ticket.subject, ticket.body)
+    background_tasks.add_task(classify_ticket, ticket.id, ticket.subject, ticket.body, ticket.from_name)
     return ticket

@@ -1,17 +1,14 @@
 import { Router } from "express"
-import { openai } from "@ai-sdk/openai"
-import { generateObject } from "ai"
 import { z } from "zod"
+import { getBoss, QUEUE_CLASSIFY_TICKET } from "../jobs/queue"
 
 const router = Router()
 
 const bodySchema = z.object({
+  ticket_id: z.string().min(1).max(200),
   ticket_subject: z.string().min(1).max(500),
   ticket_body: z.string().min(1).max(20000),
-})
-
-const categorySchema = z.object({
-  category: z.enum(["technical_it", "billing_fees", "other"]),
+  from_name: z.string().max(200).nullable().optional(),
 })
 
 router.post("/", async (req, res) => {
@@ -26,24 +23,12 @@ router.post("/", async (req, res) => {
     return
   }
 
-  const { ticket_subject, ticket_body } = parsed.data
-
   try {
-    const { object } = await generateObject({
-      model: openai("gpt-5-nano"),
-      schema: categorySchema,
-      system:
-        "You classify student support tickets into exactly one category. " +
-        "technical_it: IT/technical issues such as login problems, software, hardware, or systems access. " +
-        "billing_fees: billing, payments, fees, refunds, or other financial account issues. " +
-        "other: anything that does not clearly fit the categories above. " +
-        "Pick the single best-fitting category.",
-      prompt: `Subject: ${ticket_subject}\n\nBody: ${ticket_body}`,
-    })
-
-    res.json(object)
+    const boss = await getBoss()
+    await boss.send(QUEUE_CLASSIFY_TICKET, parsed.data, { singletonKey: parsed.data.ticket_id })
+    res.status(202).json({ queued: true })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "AI request failed"
+    const message = err instanceof Error ? err.message : "Failed to queue classification"
     res.status(502).json({ error: message })
   }
 })

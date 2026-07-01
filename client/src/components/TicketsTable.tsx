@@ -96,10 +96,12 @@ const columns: ColumnDef<Ticket>[] = [
     header: "Received",
     cell: ({ getValue }) => (
       <span className="text-gray-500">
-        {new Date(getValue<string>()).toLocaleDateString(undefined, {
+        {new Date(getValue<string>()).toLocaleString(undefined, {
           year: "numeric",
           month: "short",
           day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
         })}
       </span>
     ),

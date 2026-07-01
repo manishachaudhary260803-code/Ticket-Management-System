@@ -1,5 +1,4 @@
 import axios from "axios"
-import DOMPurify from "dompurify"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Send, Sparkles } from "lucide-react"
 import { useRef, useState } from "react"
@@ -83,10 +82,6 @@ async function postReply(ticket: Ticket, body: string): Promise<Reply> {
   return res.data
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
-}
-
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
     year: "numeric",
@@ -148,10 +143,7 @@ function ReplyCard({ reply }: { reply: Reply }) {
         </div>
         <span className="text-xs text-gray-400">{formatDateTime(reply.created_at)}</span>
       </div>
-      <div
-        className="text-sm text-gray-700 prose prose-sm max-w-none"
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.body) }}
-      />
+      <div className="text-sm text-gray-700 whitespace-pre-wrap">{reply.body}</div>
     </div>
   )
 }
@@ -450,11 +442,11 @@ export default function TicketDetail({ id }: { id: string }) {
 
         <div className="border-t border-gray-100 pt-4 space-y-4">
           <SidebarField label="Received">
-            <p className="text-sm text-gray-700">{formatDate(ticket.created_at)}</p>
+            <p className="text-sm text-gray-700">{formatDateTime(ticket.created_at)}</p>
           </SidebarField>
 
           <SidebarField label="Last Updated">
-            <p className="text-sm text-gray-700">{formatDate(ticket.updated_at)}</p>
+            <p className="text-sm text-gray-700">{formatDateTime(ticket.updated_at)}</p>
           </SidebarField>
         </div>
       </aside>

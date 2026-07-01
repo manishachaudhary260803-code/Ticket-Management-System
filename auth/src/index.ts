@@ -8,6 +8,7 @@ import usersRouter from "./routers/users"
 import polishRouter from "./routers/polish"
 import summarizeRouter from "./routers/summarize"
 import classifyRouter from "./routers/classify"
+import { startClassifyWorker } from "./jobs/classifyWorker"
 
 const secret = process.env.BETTER_AUTH_SECRET ?? ""
 if (!secret || secret.includes("dev-secret") || secret.includes("change-this")) {
@@ -52,4 +53,8 @@ app.use(express.json())
 const PORT = process.env.PORT ?? 3001
 app.listen(PORT, () => {
   console.log(`Auth service running on http://localhost:${PORT}`)
+})
+
+startClassifyWorker().catch((err) => {
+  console.error("Failed to start classify worker", err)
 })
