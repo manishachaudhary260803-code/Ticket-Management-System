@@ -6,6 +6,8 @@ import { toNodeHandler } from "better-auth/node"
 import { auth } from "./auth"
 import usersRouter from "./routers/users"
 import polishRouter from "./routers/polish"
+import summarizeRouter from "./routers/summarize"
+import classifyRouter from "./routers/classify"
 
 const secret = process.env.BETTER_AUTH_SECRET ?? ""
 if (!secret || secret.includes("dev-secret") || secret.includes("change-this")) {
@@ -39,6 +41,8 @@ app.use("/api/auth/admin/users", usersRouter)
 
 // AI features — must be registered before the Better Auth wildcard
 app.use("/api/auth/ai/polish-reply", express.json(), polishRouter)
+app.use("/api/auth/ai/summarize", express.json(), summarizeRouter)
+app.use("/api/auth/ai/classify", express.json(), classifyRouter)
 
 // Better Auth handles its own body parsing — do not put express.json() before this
 app.all("/api/auth/*", toNodeHandler(auth))

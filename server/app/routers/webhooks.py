@@ -1,12 +1,13 @@
 import os
 import uuid
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.orm import Session as DBSession
 
 from app.database import get_db
 from app.models.ticket import Category, Priority, Ticket, TicketStatus
+from app.services.classifier import classify_ticket
 
 router = APIRouter(prefix="/api/webhooks", tags=["webhooks"])
 
@@ -52,6 +53,7 @@ class WebhookTicketOut(BaseModel):
 @router.post("/ticket", response_model=WebhookTicketOut, status_code=201)
 def create_ticket_via_webhook(
     payload: WebhookTicketIn,
+    background_tasks: BackgroundTasks,
     db: DBSession = Depends(get_db),
     _: None = Depends(_verify_secret),
 ):
@@ -69,4 +71,5 @@ def create_ticket_via_webhook(
     db.add(ticket)
     db.commit()
     db.refresh(ticket)
+    background_tasks.add_task(classify_ticket, ticket.id, ticket.subject, ticket.body)
     return ticket

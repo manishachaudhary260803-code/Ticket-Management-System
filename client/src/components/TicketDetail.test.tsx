@@ -499,4 +499,360 @@ describe('TicketDetail', () => {
       expect(await screen.findByText('Failed to send reply')).toBeInTheDocument()
     })
   })
+
+  // ── summarize feature ─────────────────────────────────────────────────────
+
+  describe('summarize feature', () => {
+    const getSummarizeBtn = () => screen.getByRole('button', { name: /summarize|re-summarize/i })
+
+    function mockPostForSummarize(summaryText = 'The student had a billing question. The agent is reviewing it.') {
+      vi.mocked(axios.post).mockImplementation((url: string) => {
+        if (url.includes('/summarize'))
+          return Promise.resolve({ data: { summary: summaryText } })
+        return Promise.resolve({ data: AGENT_REPLY })
+      })
+    }
+
+    it('renders the Summarize button', async () => {
+      render()
+      await screen.findByText('Billing invoice question')
+      expect(getSummarizeBtn()).toBeInTheDocument()
+    })
+
+    it('Summarize button is enabled even with no replies', async () => {
+      render()
+      await screen.findByText('Billing invoice question')
+      expect(getSummarizeBtn()).not.toBeDisabled()
+    })
+
+    it('POSTs to /api/auth/ai/summarize with ticket subject, body, and replies', async () => {
+      mockApis({ replies: [AGENT_REPLY] })
+      mockPostForSummarize()
+      render()
+      // wait for both ticket and replies to load
+      await screen.findByText('We are reviewing your invoice.')
+
+      fireEvent.click(getSummarizeBtn())
+
+      await waitFor(() =>
+        expect(axios.post).toHaveBeenCalledWith(
+          '/api/auth/ai/summarize',
+          {
+            ticket_subject: 'Billing invoice question',
+            ticket_body: 'I have a question about my invoice.',
+            replies: [
+              {
+                sender_type: 'agent',
+                author_name: 'Alice Agent',
+                body: 'We are reviewing your invoice.',
+              },
+            ],
+          },
+          { withCredentials: true },
+        ),
+      )
+    })
+
+    it('displays the summary in a Conversation Summary section after clicking', async () => {
+      mockPostForSummarize('The student had a billing question. The agent is reviewing it.')
+      render()
+      await screen.findByText('Billing invoice question')
+
+      fireEvent.click(getSummarizeBtn())
+
+      expect(await screen.findByText('Conversation Summary')).toBeInTheDocument()
+      expect(await screen.findByText('The student had a billing question. The agent is reviewing it.')).toBeInTheDocument()
+    })
+
+    it('changes button label to "Re-summarize" after first summary is generated', async () => {
+      mockPostForSummarize()
+      render()
+      await screen.findByText('Billing invoice question')
+
+      fireEvent.click(getSummarizeBtn())
+      await screen.findByText('Conversation Summary')
+
+      expect(screen.getByRole('button', { name: /re-summarize/i })).toBeInTheDocument()
+    })
+
+    it('shows "Summarizing…" while the request is in flight', async () => {
+      vi.mocked(axios.post).mockReturnValue(new Promise(() => {}))
+      render()
+      await screen.findByText('Billing invoice question')
+
+      fireEvent.click(getSummarizeBtn())
+
+      await waitFor(() => expect(screen.getByRole('button', { name: /summarizing/i })).toBeInTheDocument())
+    })
+
+    it('disables the Summarize button while the request is in flight', async () => {
+      vi.mocked(axios.post).mockReturnValue(new Promise(() => {}))
+      render()
+      await screen.findByText('Billing invoice question')
+
+      const btn = getSummarizeBtn()
+      fireEvent.click(btn)
+
+      await waitFor(() => expect(btn).toBeDisabled())
+    })
+
+    it('replaces the summary with a new one on re-click', async () => {
+      mockPostForSummarize('First summary.')
+      render()
+      await screen.findByText('Billing invoice question')
+      fireEvent.click(getSummarizeBtn())
+      await screen.findByText('First summary.')
+
+      vi.mocked(axios.post).mockImplementation((url: string) => {
+        if (url.includes('/summarize'))
+          return Promise.resolve({ data: { summary: 'Updated summary.' } })
+        return Promise.resolve({ data: AGENT_REPLY })
+      })
+      fireEvent.click(getSummarizeBtn())
+
+      expect(await screen.findByText('Updated summary.')).toBeInTheDocument()
+      expect(screen.queryByText('First summary.')).not.toBeInTheDocument()
+    })
+
+    it('shows an inline error when the summarize request fails with an API error', async () => {
+      const err = Object.assign(new Error('AI error'), {
+        isAxiosError: true,
+        response: { data: { error: 'AI service unavailable' } },
+      })
+      vi.mocked(axios.post).mockRejectedValue(err)
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      render()
+      await screen.findByText('Billing invoice question')
+      fireEvent.click(getSummarizeBtn())
+
+      expect(await screen.findByText('AI service unavailable')).toBeInTheDocument()
+    })
+
+    it('shows a generic error when the summarize request fails without a detail field', async () => {
+      const err = Object.assign(new Error('Network error'), { isAxiosError: false })
+      vi.mocked(axios.post).mockRejectedValue(err)
+      vi.mocked(axios.isAxiosError).mockReturnValue(false)
+
+      render()
+      await screen.findByText('Billing invoice question')
+      fireEvent.click(getSummarizeBtn())
+
+      expect(await screen.findByText('Failed to summarize conversation')).toBeInTheDocument()
+    })
+
+    it('clears the error when a subsequent summarize request succeeds', async () => {
+      const err = Object.assign(new Error('fail'), { isAxiosError: false })
+      vi.mocked(axios.post).mockRejectedValueOnce(err)
+      vi.mocked(axios.isAxiosError).mockReturnValue(false)
+
+      render()
+      await screen.findByText('Billing invoice question')
+      fireEvent.click(getSummarizeBtn())
+      await screen.findByText('Failed to summarize conversation')
+
+      mockPostForSummarize('All good now.')
+      fireEvent.click(getSummarizeBtn())
+
+      await waitFor(() => expect(screen.queryByText('Failed to summarize conversation')).not.toBeInTheDocument())
+      expect(await screen.findByText('All good now.')).toBeInTheDocument()
+    })
+  })
+
+  // ── polish feature ────────────────────────────────────────────────────────
+
+  describe('polish feature', () => {
+    const getTextarea = () => screen.getByPlaceholderText(/Write a reply/)
+    const getPolishBtn = () => screen.getByRole('button', { name: /polish/i })
+    const getSendBtn = () => screen.getByRole('button', { name: /send reply/i })
+
+    function mockPostForPolish(polishedText = 'Polished reply text.') {
+      vi.mocked(axios.post).mockImplementation((url: string) => {
+        if (url.includes('/polish-reply'))
+          return Promise.resolve({ data: { polished: polishedText } })
+        return Promise.resolve({ data: AGENT_REPLY })
+      })
+    }
+
+    it('renders the Polish button', async () => {
+      render()
+      await screen.findByText('Billing invoice question')
+      expect(getPolishBtn()).toBeInTheDocument()
+    })
+
+    it('disables the Polish button when the textarea is empty', async () => {
+      render()
+      await screen.findByText('Billing invoice question')
+      expect(getPolishBtn()).toBeDisabled()
+    })
+
+    it('disables the Polish button for whitespace-only input', async () => {
+      render()
+      await screen.findByText('Billing invoice question')
+      fireEvent.change(getTextarea(), { target: { value: '   ' } })
+      expect(getPolishBtn()).toBeDisabled()
+    })
+
+    it('enables the Polish button when the textarea has text', async () => {
+      render()
+      await screen.findByText('Billing invoice question')
+      fireEvent.change(getTextarea(), { target: { value: 'Hello' } })
+      expect(getPolishBtn()).not.toBeDisabled()
+    })
+
+    it('POSTs to /api/auth/ai/polish-reply with draft, agent_name, and customer_first_name', async () => {
+      mockPostForPolish()
+      render()
+      await screen.findByText('Billing invoice question')
+
+      fireEvent.change(getTextarea(), { target: { value: 'Please check your invoice.' } })
+      fireEvent.click(getPolishBtn())
+
+      await waitFor(() =>
+        expect(axios.post).toHaveBeenCalledWith(
+          '/api/auth/ai/polish-reply',
+          {
+            draft: 'Please check your invoice.',
+            agent_name: 'Agent',
+            customer_first_name: 'John',
+          },
+          { withCredentials: true },
+        ),
+      )
+    })
+
+    it('sends only the first name from from_name', async () => {
+      mockApis({ ticket: { ...BASE_TICKET, from_name: 'Jane Smith' } })
+      mockPostForPolish()
+      render()
+      await screen.findByText('Billing invoice question')
+
+      fireEvent.change(getTextarea(), { target: { value: 'Hi there.' } })
+      fireEvent.click(getPolishBtn())
+
+      await waitFor(() =>
+        expect(axios.post).toHaveBeenCalledWith(
+          '/api/auth/ai/polish-reply',
+          expect.objectContaining({ customer_first_name: 'Jane' }),
+          expect.anything(),
+        ),
+      )
+    })
+
+    it('sends undefined customer_first_name when from_name is null', async () => {
+      mockApis({ ticket: { ...BASE_TICKET, from_name: null } })
+      mockPostForPolish()
+      render()
+      await screen.findByText('Billing invoice question')
+
+      fireEvent.change(getTextarea(), { target: { value: 'Hi there.' } })
+      fireEvent.click(getPolishBtn())
+
+      await waitFor(() =>
+        expect(axios.post).toHaveBeenCalledWith(
+          '/api/auth/ai/polish-reply',
+          expect.objectContaining({ customer_first_name: undefined }),
+          expect.anything(),
+        ),
+      )
+    })
+
+    it('replaces the textarea content with the polished text', async () => {
+      mockPostForPolish('This is the improved reply.')
+      render()
+      await screen.findByText('Billing invoice question')
+
+      fireEvent.change(getTextarea(), { target: { value: 'rough draft' } })
+      fireEvent.click(getPolishBtn())
+
+      await waitFor(() => expect(getTextarea()).toHaveValue('This is the improved reply.'))
+    })
+
+    it('shows "Polishing…" on the button while the request is in flight', async () => {
+      vi.mocked(axios.post).mockReturnValue(new Promise(() => {}))
+      render()
+      await screen.findByText('Billing invoice question')
+
+      fireEvent.change(getTextarea(), { target: { value: 'draft' } })
+      fireEvent.click(getPolishBtn())
+
+      await waitFor(() => expect(screen.getByRole('button', { name: /polishing/i })).toBeInTheDocument())
+    })
+
+    it('disables the Polish button while the request is in flight', async () => {
+      vi.mocked(axios.post).mockReturnValue(new Promise(() => {}))
+      render()
+      await screen.findByText('Billing invoice question')
+
+      fireEvent.change(getTextarea(), { target: { value: 'draft' } })
+      const btn = getPolishBtn()
+      fireEvent.click(btn)
+
+      await waitFor(() => expect(btn).toBeDisabled())
+    })
+
+    it('disables the Send Reply button while polishing is in flight', async () => {
+      vi.mocked(axios.post).mockReturnValue(new Promise(() => {}))
+      render()
+      await screen.findByText('Billing invoice question')
+
+      fireEvent.change(getTextarea(), { target: { value: 'draft' } })
+      fireEvent.click(getPolishBtn())
+
+      await waitFor(() => expect(getSendBtn()).toBeDisabled())
+    })
+
+    it('shows an inline error when the polish request fails with an API error', async () => {
+      const err = Object.assign(new Error('AI error'), {
+        isAxiosError: true,
+        response: { data: { error: 'AI service unavailable' } },
+      })
+      vi.mocked(axios.post).mockRejectedValue(err)
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      render()
+      await screen.findByText('Billing invoice question')
+
+      fireEvent.change(getTextarea(), { target: { value: 'draft' } })
+      fireEvent.click(getPolishBtn())
+
+      expect(await screen.findByText('AI service unavailable')).toBeInTheDocument()
+    })
+
+    it('shows a generic error when the polish request fails without a detail field', async () => {
+      const err = Object.assign(new Error('Network error'), { isAxiosError: false })
+      vi.mocked(axios.post).mockRejectedValue(err)
+      vi.mocked(axios.isAxiosError).mockReturnValue(false)
+
+      render()
+      await screen.findByText('Billing invoice question')
+
+      fireEvent.change(getTextarea(), { target: { value: 'draft' } })
+      fireEvent.click(getPolishBtn())
+
+      expect(await screen.findByText('Failed to polish reply')).toBeInTheDocument()
+    })
+
+    it('clears the polish error when a new polish request is started', async () => {
+      const err = Object.assign(new Error('fail'), { isAxiosError: false })
+      vi.mocked(axios.post).mockRejectedValueOnce(err)
+      vi.mocked(axios.isAxiosError).mockReturnValue(false)
+
+      render()
+      await screen.findByText('Billing invoice question')
+      fireEvent.change(getTextarea(), { target: { value: 'draft' } })
+      fireEvent.click(getPolishBtn())
+      await screen.findByText('Failed to polish reply')
+
+      // second attempt succeeds — error should disappear
+      vi.mocked(axios.post).mockImplementation((url: string) => {
+        if (url.includes('/polish-reply'))
+          return Promise.resolve({ data: { polished: 'Better reply.' } })
+        return Promise.resolve({ data: AGENT_REPLY })
+      })
+      fireEvent.click(getPolishBtn())
+
+      await waitFor(() => expect(screen.queryByText('Failed to polish reply')).not.toBeInTheDocument())
+    })
+  })
 })

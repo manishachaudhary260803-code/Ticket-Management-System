@@ -156,6 +156,27 @@ function ReplyCard({ reply }: { reply: Reply }) {
   )
 }
 
+async function summarizeConversation(
+  ticketSubject: string,
+  ticketBody: string,
+  replies: Reply[],
+): Promise<string> {
+  const res = await axios.post<{ summary: string }>(
+    "/api/auth/ai/summarize",
+    {
+      ticket_subject: ticketSubject,
+      ticket_body: ticketBody,
+      replies: replies.map((r) => ({
+        sender_type: r.sender_type,
+        author_name: r.author?.name ?? null,
+        body: r.body,
+      })),
+    },
+    { withCredentials: true },
+  )
+  return res.data.summary
+}
+
 async function polishReply(draft: string, agentName: string, customerFirstName?: string): Promise<string> {
   const res = await axios.post<{ polished: string }>(
     "/api/auth/ai/polish-reply",
@@ -171,6 +192,9 @@ export default function TicketDetail({ id }: { id: string }) {
   const [replyBody, setReplyBody] = useState("")
   const [isPolishing, setIsPolishing] = useState(false)
   const [polishError, setPolishError] = useState<string | null>(null)
+  const [conversationSummary, setConversationSummary] = useState<string | null>(null)
+  const [isSummarizing, setIsSummarizing] = useState(false)
+  const [summarizeError, setSummarizeError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const { data: ticket, isPending, isError, error } = useQuery({
@@ -233,6 +257,24 @@ export default function TicketDetail({ id }: { id: string }) {
     }
   }
 
+  async function handleSummarize() {
+    if (isSummarizing) return
+    setSummarizeError(null)
+    setIsSummarizing(true)
+    try {
+      const summary = await summarizeConversation(ticket?.subject ?? "", ticket?.body ?? "", replies)
+      setConversationSummary(summary)
+    } catch (err) {
+      setSummarizeError(
+        axios.isAxiosError(err)
+          ? (err.response?.data?.error ?? err.message)
+          : "Failed to summarize conversation"
+      )
+    } finally {
+      setIsSummarizing(false)
+    }
+  }
+
   const errorMessage = isError
     ? axios.isAxiosError(error)
       ? (error.response?.data?.detail ?? error.message)
@@ -285,6 +327,28 @@ export default function TicketDetail({ id }: { id: string }) {
               {replies.map((reply) => <ReplyCard key={reply.id} reply={reply} />)}
             </div>
           )}
+
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSummarize}
+                disabled={isSummarizing}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[#1e3a5f] bg-white border border-[#1e3a5f] rounded-lg hover:bg-[#1e3a5f]/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {isSummarizing ? "Summarizing…" : conversationSummary ? "Re-summarize" : "Summarize"}
+              </button>
+            </div>
+            {summarizeError && (
+              <p className="text-xs text-red-600">{summarizeError}</p>
+            )}
+            {conversationSummary && (
+              <DetailSection label="Conversation Summary" variant="blue">
+                <p className="text-sm text-gray-800 leading-relaxed">{conversationSummary}</p>
+              </DetailSection>
+            )}
+          </div>
 
           <form onSubmit={handleReplySubmit} className="mt-4 space-y-2">
             <textarea

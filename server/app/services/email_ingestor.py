@@ -9,6 +9,7 @@ from html.parser import HTMLParser
 
 from app.database import SessionLocal
 from app.models.ticket import Category, Priority, Ticket, TicketStatus
+from app.services.classifier import classify_ticket
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,7 @@ def _extract_body(msg: email_lib.message.Message) -> str:
     return ""
 
 
-def poll_mailbox() -> int:
+def poll_mailbox(loop: asyncio.AbstractEventLoop) -> int:
     """Fetch unseen IMAP messages and create tickets. Returns number of tickets created."""
     if not all([IMAP_HOST, IMAP_USER, IMAP_PASSWORD]):
         logger.warning("IMAP credentials not configured — skipping email poll")
@@ -139,6 +140,9 @@ def poll_mailbox() -> int:
                 )
                 db.add(ticket)
                 db.commit()
+                asyncio.run_coroutine_threadsafe(
+                    classify_ticket(ticket.id, ticket.subject, ticket.body), loop
+                )
                 imap.store(uid, "+FLAGS", "\\Seen")
                 created += 1
                 logger.info("Ticket %s created from email '%s'", ticket.id, subject)
@@ -155,9 +159,10 @@ def poll_mailbox() -> int:
 async def run_poller() -> None:
     """Background coroutine: polls the mailbox every POLL_INTERVAL seconds."""
     logger.info("Email poller started — interval %ds", POLL_INTERVAL)
+    loop = asyncio.get_running_loop()
     while True:
         try:
-            count = await asyncio.to_thread(poll_mailbox)
+            count = await asyncio.to_thread(poll_mailbox, loop)
             if count:
                 logger.info("Email poll complete: %d ticket(s) created", count)
         except Exception:
