@@ -13,6 +13,8 @@ server/venv
 # Build output (rebuilt inside the image)
 client/dist
 client/.vite
+core/dist
+*.tsbuildinfo
 
 # Env files — real secrets must be injected via Railway env vars, not baked into images
 .env
