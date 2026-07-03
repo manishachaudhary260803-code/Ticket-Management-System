@@ -11,7 +11,11 @@ def get_current_user(
     request: Request,
     db: DBSession = Depends(get_db),
 ) -> User:
-    token = request.cookies.get("better-auth.session_token")
+    # Better Auth prefixes the cookie with "__Secure-" when served over HTTPS
+    # (production), but not over plain http:// (local dev) — check both.
+    token = request.cookies.get("__Secure-better-auth.session_token") or request.cookies.get(
+        "better-auth.session_token"
+    )
     if not token:
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
