@@ -119,7 +119,7 @@ describe('TicketDetail', () => {
   it('renders the short ticket ID prefix below the subject', async () => {
     render()
     await screen.findByText('Billing invoice question')
-    expect(screen.getByText(`#${TICKET_ID.slice(0, 8)}`)).toBeInTheDocument()
+    expect(screen.getByText(`#${TICKET_ID.slice(0, 8).toUpperCase()}`)).toBeInTheDocument()
   })
 
   it('displays from_name and from_email when both are present', async () => {

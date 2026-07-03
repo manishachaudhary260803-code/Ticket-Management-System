@@ -23,20 +23,20 @@ interface Props {
 export default function UsersTable({ users, isPending, isError, errorMessage, onEdit, onDelete }: Props) {
   const headers = (
     <tr>
-      <th className="px-4 py-3 text-left font-medium text-gray-500">Name</th>
-      <th className="px-4 py-3 text-left font-medium text-gray-500">Email</th>
-      <th className="px-4 py-3 text-left font-medium text-gray-500">Role</th>
-      <th className="px-4 py-3 text-left font-medium text-gray-500">Joined</th>
+      <th className="px-4 py-3 text-left section-label text-ink-muted">Name</th>
+      <th className="px-4 py-3 text-left section-label text-ink-muted">Email</th>
+      <th className="px-4 py-3 text-left section-label text-ink-muted">Role</th>
+      <th className="px-4 py-3 text-left section-label text-ink-muted">Joined</th>
       <th className="px-4 py-3" />
     </tr>
   )
 
   if (isPending) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-card rounded-lg border border-border overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">{headers}</thead>
-          <tbody className="divide-y divide-gray-100">
+          <thead className="bg-secondary border-b border-border">{headers}</thead>
+          <tbody className="divide-y divide-border">
             {Array.from({ length: 5 }).map((_, i) => (
               <tr key={i}>
                 <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
@@ -54,33 +54,33 @@ export default function UsersTable({ users, isPending, isError, errorMessage, on
 
   if (isError) {
     return (
-      <p className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-md">
+      <p className="text-sm text-maroon bg-maroon-tint px-4 py-3 rounded-md">
         {errorMessage}
       </p>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-card rounded-lg border border-border overflow-hidden">
       <table className="w-full text-sm">
-        <thead className="bg-gray-50 border-b border-gray-200">{headers}</thead>
-        <tbody className="divide-y divide-gray-100">
+        <thead className="bg-secondary border-b border-border">{headers}</thead>
+        <tbody className="divide-y divide-border">
           {users.map((user) => (
-            <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-3 text-gray-900 font-medium">{user.name}</td>
-              <td className="px-4 py-3 text-gray-600">{user.email}</td>
+            <tr key={user.id} className="hover:bg-paper transition-colors">
+              <td className="px-4 py-3 text-ink font-medium">{user.name}</td>
+              <td className="px-4 py-3 text-ink-muted">{user.email}</td>
               <td className="px-4 py-3">
                 <span
                   className={
                     user.role === "admin"
-                      ? "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#1e3a5f] text-white"
-                      : "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700"
+                      ? "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-navy text-white"
+                      : "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-secondary text-ink-muted"
                   }
                 >
                   {user.role}
                 </span>
               </td>
-              <td className="px-4 py-3 text-gray-500">
+              <td className="px-4 py-3 font-mono text-xs text-ink-muted">
                 {new Date(user.created_at).toLocaleDateString(undefined, {
                   year: "numeric",
                   month: "short",
@@ -102,7 +102,7 @@ export default function UsersTable({ users, isPending, isError, errorMessage, on
                       variant="ghost"
                       size="sm"
                       aria-label={`Delete ${user.name}`}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                      className="text-maroon hover:text-maroon hover:bg-maroon-tint"
                       onClick={() => onDelete(user)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -114,7 +114,7 @@ export default function UsersTable({ users, isPending, isError, errorMessage, on
           ))}
           {users.length === 0 && (
             <tr>
-              <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
+              <td colSpan={5} className="px-4 py-6 text-center text-ink-muted">
                 No users found.
               </td>
             </tr>

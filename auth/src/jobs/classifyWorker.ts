@@ -37,9 +37,13 @@ export async function startClassifyWorker(): Promise<void> {
         [randomUUID(), ticket_id, kbReply],
       )
       // The knowledgebase fully answered the question, so there's nothing left for an agent to do.
-      await pool.query(`UPDATE tickets SET status = 'resolved'::ticketstatus, updated_at = now() WHERE id = $1`, [
-        ticket_id,
-      ])
+      await pool.query(
+        `UPDATE tickets SET status = 'resolved'::ticketstatus, resolved_at = now(), resolved_by_ai = true, updated_at = now() WHERE id = $1`,
+        [ticket_id],
+      )
+    } else {
+      // Couldn't auto-resolve — hand it back to a human agent instead of leaving it stuck on AI.
+      await pool.query(`UPDATE tickets SET assignee_id = NULL, updated_at = now() WHERE id = $1`, [ticket_id])
     }
   })
 

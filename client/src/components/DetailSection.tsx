@@ -1,11 +1,11 @@
 import React from "react"
 
-type Variant = "default" | "blue" | "amber"
+type Variant = "default" | "sage" | "brass"
 
 const variantCls: Record<Variant, { section: string; label: string }> = {
-  default: { section: "bg-white border-gray-200",   label: "text-gray-500"  },
-  blue:    { section: "bg-blue-50 border-blue-100",  label: "text-blue-700"  },
-  amber:   { section: "bg-amber-50 border-amber-100", label: "text-amber-700" },
+  default: { section: "bg-card border-border",      label: "text-ink-muted" },
+  sage:    { section: "bg-sage-tint border-sage/20", label: "text-sage"      },
+  brass:   { section: "bg-brass-tint border-brass/25", label: "text-brass-dark" },
 }
 
 export function DetailSection({

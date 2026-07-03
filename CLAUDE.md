@@ -46,11 +46,19 @@ python main.py                 # http://localhost:3000
 alembic upgrade head           # run migrations
 ```
 
+## Deployment
+
+Deploys to Railway as 3 Dockerfile-based services (`client`, `auth`,
+`server`) + managed Postgres, with `client`'s nginx reverse-proxying
+`/api/auth/*` and `/api/*` to the other two over Railway's private network.
+See `DEPLOYMENT.md` for the full setup. `Dockerfile` + `railway.json` live
+inside each service's own directory.
+
 ## Architecture
 
 ```
 client/src/          React app
-  components/DetailSection.tsx  reusable labeled card section (variants: default/blue/amber)
+  components/DetailSection.tsx  reusable labeled card section (variants: default/sage/brass)
   lib/auth-client.ts createAuthClient() — points at VITE_AUTH_URL (proxied to :3001)
 auth/src/
   auth.ts            Better Auth config (emailAndPassword, role field, trustedOrigins)

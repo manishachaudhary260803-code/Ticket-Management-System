@@ -75,11 +75,14 @@ export default function TicketsPage() {
     : null
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <main className="max-w-7xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">Tickets</h2>
+          <div>
+            <p className="section-label text-brass-dark mb-1">Ticket Queue</p>
+            <h2 className="font-display italic text-3xl text-ink">Tickets</h2>
+          </div>
         </div>
 
         <TicketFilterBar filters={filters} onChange={handleFiltersChange} />

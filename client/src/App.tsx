@@ -11,8 +11,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isPending) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <span className="text-sm text-gray-400">Loading…</span>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <span className="text-sm text-ink-muted">Loading…</span>
       </div>
     )
   }
@@ -29,8 +29,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
   if (isPending) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <span className="text-sm text-gray-400">Loading…</span>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <span className="text-sm text-ink-muted">Loading…</span>
       </div>
     )
   }

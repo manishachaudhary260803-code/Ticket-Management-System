@@ -1,13 +1,23 @@
-export const statusStyles: Record<string, string> = {
-  open: "bg-green-100 text-green-800",
-  in_progress: "bg-blue-100 text-blue-800",
-  resolved: "bg-gray-100 text-gray-600",
+// Used in TicketDetail's sidebar, where a single colored pill per field is fine.
+export const priorityStyles: Record<string, string> = {
+  low: "bg-secondary text-ink-muted",
+  medium: "bg-brass-tint text-brass-dark",
+  high: "bg-maroon-tint text-maroon",
 }
 
-export const priorityStyles: Record<string, string> = {
-  low: "bg-gray-100 text-gray-600",
-  medium: "bg-amber-100 text-amber-800",
-  high: "bg-red-100 text-red-700",
+// Used in the ticket table, where the same field is repeated down every row —
+// a small dot is enough of a signal; text stays neutral so the row doesn't
+// turn into a wall of colored pills.
+export const statusDotColor: Record<string, string> = {
+  open: "bg-brass",
+  in_progress: "bg-navy",
+  resolved: "bg-sage",
+}
+
+export const priorityTextStyle: Record<string, string> = {
+  low: "text-ink-muted",
+  medium: "text-ink",
+  high: "text-maroon font-semibold",
 }
 
 export const categoryLabels: Record<string, string> = {

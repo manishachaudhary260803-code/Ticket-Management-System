@@ -1,13 +1,31 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/fraunces";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
+    --font-sans: 'Inter Variable', sans-serif;
+    --font-display: 'Fraunces Variable', serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --color-paper: var(--paper);
+    --color-ink: var(--ink);
+    --color-ink-muted: var(--ink-muted);
+    --color-navy: var(--navy);
+    --color-navy-hover: var(--navy-hover);
+    --color-navy-tint: var(--navy-tint);
+    --color-brass: var(--brass);
+    --color-brass-dark: var(--brass-dark);
+    --color-brass-tint: var(--brass-tint);
+    --color-sage: var(--sage);
+    --color-sage-tint: var(--sage-tint);
+    --color-maroon: var(--maroon);
+    --color-maroon-tint: var(--maroon-tint);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,38 +67,53 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    /* Intake Desk palette — a campus student-services counter, not a generic SaaS dashboard */
+    --paper: #EDEFEA;
+    --ink: #161A1F;
+    --ink-muted: #5B655F;
+    --navy: #1B3A5C;
+    --navy-hover: #14293F;
+    --navy-tint: #E5EAEF;
+    --brass: #B8863A;
+    --brass-dark: #93672A;
+    --brass-tint: #F3E9D3;
+    --sage: #3F7A5D;
+    --sage-tint: #E3EEE7;
+    --maroon: #7A2E2E;
+    --maroon-tint: #F3E3E1;
+
+    --background: var(--paper);
+    --foreground: var(--ink);
+    --card: #FFFFFF;
+    --card-foreground: var(--ink);
+    --popover: #FFFFFF;
+    --popover-foreground: var(--ink);
+    --primary: var(--navy);
+    --primary-foreground: #F5F4F1;
+    --secondary: #E2E4DD;
+    --secondary-foreground: var(--ink);
+    --muted: #E2E4DD;
+    --muted-foreground: var(--ink-muted);
+    --accent: var(--brass-tint);
+    --accent-foreground: var(--brass-dark);
+    --destructive: var(--maroon);
+    --border: #D8DCD3;
+    --input: #D8DCD3;
+    --ring: var(--navy);
+    --chart-1: var(--navy);
+    --chart-2: var(--brass);
+    --chart-3: var(--sage);
+    --chart-4: var(--maroon);
+    --chart-5: var(--ink-muted);
+    --radius: 0.5rem;
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: var(--ink);
+    --sidebar-primary: var(--navy);
+    --sidebar-primary-foreground: #F5F4F1;
+    --sidebar-accent: var(--brass-tint);
+    --sidebar-accent-foreground: var(--brass-dark);
+    --sidebar-border: #D8DCD3;
+    --sidebar-ring: var(--navy);
 }
 
 .dark {
@@ -137,13 +170,33 @@
     @apply text-xs font-medium uppercase tracking-wide;
   }
   .field-select {
-    @apply w-full text-sm border border-gray-200 rounded-md px-2.5 py-1.5 text-gray-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#1e3a5f] disabled:opacity-50;
+    @apply w-full text-sm border border-border rounded-md px-2.5 py-1.5 text-ink bg-white focus:outline-none focus:ring-1 focus:ring-navy disabled:opacity-50;
+  }
+
+  /* Claim-check stub — signature element for ticket rows. A punched hole in
+     brand-paper color reads as a torn ticket stub against the row's white
+     background, with the ticket number set in brass mono like a stamped tag. */
+  .claim-check {
+    position: relative;
+    padding-left: 2rem;
+  }
+  .claim-check::before {
+    content: "";
+    position: absolute;
+    left: 0.875rem;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    background: var(--paper);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.28), 0 1px 0 rgb(255 255 255 / 0.5);
+    transform: translateY(-50%);
   }
 }
 
 @layer utilities {
   .link {
-    color: #1e3a5f;
+    color: var(--navy);
     &:hover { text-decoration: underline; }
   }
 }

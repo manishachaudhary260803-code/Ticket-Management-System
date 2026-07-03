@@ -1,7 +1,7 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Enum, DateTime, ForeignKey, Text
+from sqlalchemy import Boolean, Column, String, Enum, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -58,6 +58,8 @@ class Ticket(Base):
     assignee_id = Column(String, ForeignKey("users.id"), nullable=True)
     ai_summary = Column(Text)
     ai_draft_reply = Column(Text)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    resolved_by_ai = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime(timezone=True),

@@ -60,15 +60,15 @@ describe('UsersPage', () => {
     expect(screen.getByText('bob@example.com')).toBeInTheDocument()
   })
 
-  it('shows admin badge in dark blue and agent badge in gray', async () => {
+  it('shows admin badge in navy and agent badge in neutral', async () => {
     renderPage()
     await screen.findByText('Alice Admin')
 
     const adminBadge = screen.getByText('admin')
-    expect(adminBadge).toHaveClass('bg-[#1e3a5f]')
+    expect(adminBadge).toHaveClass('bg-navy')
 
     const agentBadge = screen.getByText('agent')
-    expect(agentBadge).toHaveClass('bg-gray-100')
+    expect(agentBadge).toHaveClass('bg-secondary')
   })
 
   it('formats the joined date', async () => {

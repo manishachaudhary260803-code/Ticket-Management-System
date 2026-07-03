@@ -59,15 +59,15 @@ export default function DeleteUserModal({ open, user, onClose }: Props) {
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}
     >
-      <div className="bg-white rounded-lg border border-gray-200 w-full max-w-sm mx-4 p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Delete User</h3>
-        <p className="text-sm text-gray-600 mb-1">
-          Are you sure you want to delete <span className="font-medium text-gray-900">{user.name}</span>?
+      <div className="bg-card rounded-lg border border-border w-full max-w-sm mx-4 p-6">
+        <h3 className="font-display italic text-lg text-ink mb-2">Delete User</h3>
+        <p className="text-sm text-ink-muted mb-1">
+          Are you sure you want to delete <span className="font-medium text-ink">{user.name}</span>?
         </p>
-        <p className="text-sm text-gray-500 mb-5">{user.email}</p>
+        <p className="text-sm text-ink-muted mb-5">{user.email}</p>
 
         {serverError && (
-          <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md mb-4">{serverError}</p>
+          <p className="text-sm text-maroon bg-maroon-tint px-3 py-2 rounded-md mb-4">{serverError}</p>
         )}
 
         <div className="flex gap-3 justify-end">

@@ -8,7 +8,7 @@ import {
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Skeleton } from "@/components/ui/skeleton"
-import { statusStyles, priorityStyles, categoryLabels } from "@/lib/ticket-utils"
+import { statusDotColor, priorityTextStyle, categoryLabels } from "@/lib/ticket-utils"
 
 export interface Ticket {
   id: string
@@ -35,14 +35,19 @@ const columns: ColumnDef<Ticket>[] = [
   {
     accessorKey: "subject",
     header: "Subject",
-    meta: { truncate: true },
+    meta: { claimCheck: true },
     cell: ({ getValue, row }) => (
-      <Link
-        to={`/tickets/${row.original.id}`}
-        className="link font-medium"
-      >
-        {getValue<string>()}
-      </Link>
+      <div className="flex flex-col gap-0.5 min-w-0 max-w-xs">
+        <span className="font-mono text-[11px] text-brass-dark tracking-wide">
+          #{row.original.id.slice(0, 8).toUpperCase()}
+        </span>
+        <Link
+          to={`/tickets/${row.original.id}`}
+          className="link font-medium truncate block"
+        >
+          {getValue<string>()}
+        </Link>
+      </div>
     ),
   },
   {
@@ -54,7 +59,7 @@ const columns: ColumnDef<Ticket>[] = [
       <>
         <span className="block">{row.original.from_name || row.original.from_email}</span>
         {row.original.from_name && (
-          <span className="block text-xs text-gray-400">{row.original.from_email}</span>
+          <span className="block text-xs text-ink-muted">{row.original.from_email}</span>
         )}
       </>
     ),
@@ -65,7 +70,8 @@ const columns: ColumnDef<Ticket>[] = [
     cell: ({ getValue }) => {
       const v = getValue<string>()
       return (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusStyles[v] ?? "bg-gray-100 text-gray-600"}`}>
+        <span className="inline-flex items-center gap-1.5 text-ink">
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDotColor[v] ?? "bg-ink-muted"}`} aria-hidden="true" />
           {v.replace("_", " ")}
         </span>
       )
@@ -76,11 +82,7 @@ const columns: ColumnDef<Ticket>[] = [
     header: "Priority",
     cell: ({ getValue }) => {
       const v = getValue<string>()
-      return (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${priorityStyles[v] ?? "bg-gray-100 text-gray-600"}`}>
-          {v}
-        </span>
-      )
+      return <span className={priorityTextStyle[v] ?? "text-ink-muted"}>{v}</span>
     },
   },
   {
@@ -88,14 +90,14 @@ const columns: ColumnDef<Ticket>[] = [
     header: "Category",
     cell: ({ getValue }) => {
       const v = getValue<string>()
-      return <span className="text-gray-600">{categoryLabels[v] ?? v}</span>
+      return <span className="text-ink-muted">{categoryLabels[v] ?? v}</span>
     },
   },
   {
     accessorKey: "created_at",
     header: "Received",
     cell: ({ getValue }) => (
-      <span className="text-gray-500">
+      <span className="font-mono text-xs text-ink-muted">
         {new Date(getValue<string>()).toLocaleString(undefined, {
           year: "numeric",
           month: "short",
@@ -111,7 +113,7 @@ const columns: ColumnDef<Ticket>[] = [
 function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
   if (isSorted === "asc") return <ChevronUp className="inline w-3.5 h-3.5 ml-1" />
   if (isSorted === "desc") return <ChevronDown className="inline w-3.5 h-3.5 ml-1" />
-  return <ChevronsUpDown className="inline w-3.5 h-3.5 ml-1 text-gray-300" />
+  return <ChevronsUpDown className="inline w-3.5 h-3.5 ml-1 text-ink-muted/40" />
 }
 
 const SKELETON_COLS = 6
@@ -131,16 +133,16 @@ export default function TicketsTable({ tickets, isPending, isError, errorMessage
 
   if (isError) {
     return (
-      <p className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-md">
+      <p className="text-sm text-maroon bg-maroon-tint px-4 py-3 rounded-md">
         {errorMessage}
       </p>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
+    <div className="bg-card rounded-lg border border-border overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-gray-50 border-b border-gray-200">
+        <thead className="bg-secondary border-b border-border">
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id}>
               {hg.headers.map((header) => {
@@ -148,7 +150,7 @@ export default function TicketsTable({ tickets, isPending, isError, errorMessage
                 return (
                   <th
                     key={header.id}
-                    className={`px-4 py-3 text-left font-medium text-gray-500 select-none ${canSort ? "cursor-pointer hover:text-gray-700" : ""}`}
+                    className={`px-4 py-3 text-left section-label text-ink-muted select-none ${canSort ? "cursor-pointer hover:text-ink" : ""}`}
                     onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
@@ -159,7 +161,7 @@ export default function TicketsTable({ tickets, isPending, isError, errorMessage
             </tr>
           ))}
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-border">
           {isPending
             ? Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
@@ -173,17 +175,22 @@ export default function TicketsTable({ tickets, isPending, isError, errorMessage
             : table.getRowModel().rows.length === 0
             ? (
                 <tr>
-                  <td colSpan={SKELETON_COLS} className="px-4 py-6 text-center text-gray-400">
+                  <td colSpan={SKELETON_COLS} className="px-4 py-6 text-center text-ink-muted">
                     No tickets yet.
                   </td>
                 </tr>
               )
             : table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={row.id} className="hover:bg-paper transition-colors">
                   {row.getVisibleCells().map((cell) => {
-                    const truncate = (cell.column.columnDef.meta as { truncate?: boolean } | undefined)?.truncate
+                    const meta = cell.column.columnDef.meta as { truncate?: boolean; claimCheck?: boolean } | undefined
+                    const cls = [
+                      "px-4 py-3",
+                      meta?.claimCheck ? "claim-check" : "",
+                      meta?.truncate ? "max-w-xs truncate" : meta?.claimCheck ? "" : "whitespace-nowrap",
+                    ].filter(Boolean).join(" ")
                     return (
-                      <td key={cell.id} className={`px-4 py-3${truncate ? " max-w-xs truncate" : " whitespace-nowrap"}`}>
+                      <td key={cell.id} className={cls}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     )

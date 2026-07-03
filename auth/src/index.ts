@@ -1,7 +1,8 @@
-import "dotenv/config"
+import "./instrument"
 import express from "express"
 import cors from "cors"
 import rateLimit from "express-rate-limit"
+import * as Sentry from "@sentry/node"
 import { toNodeHandler } from "better-auth/node"
 import { auth } from "./auth"
 import usersRouter from "./routers/users"
@@ -49,6 +50,8 @@ app.use("/api/auth/ai/classify", express.json(), classifyRouter)
 app.all("/api/auth/*", toNodeHandler(auth))
 
 app.use(express.json())
+
+Sentry.setupExpressErrorHandler(app)
 
 const PORT = process.env.PORT ?? 3001
 app.listen(PORT, () => {

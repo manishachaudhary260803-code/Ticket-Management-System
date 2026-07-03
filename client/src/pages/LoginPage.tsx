@@ -38,10 +38,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm border-t-2 border-t-brass">
         <CardHeader>
-          <CardTitle className="text-2xl">Sign in</CardTitle>
-          <CardDescription>Ticket Management System</CardDescription>
+          <CardTitle className="italic text-2xl text-ink">Sign in</CardTitle>
+          <CardDescription className="text-ink-muted">Ticket Management System</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
@@ -56,7 +56,7 @@ export default function LoginPage() {
                 {...register("email")}
               />
               {errors.email && (
-                <p className="text-xs text-destructive">{errors.email.message}</p>
+                <p className="text-xs text-maroon">{errors.email.message}</p>
               )}
             </div>
 
@@ -71,17 +71,17 @@ export default function LoginPage() {
                 {...register("password")}
               />
               {errors.password && (
-                <p className="text-xs text-destructive">{errors.password.message}</p>
+                <p className="text-xs text-maroon">{errors.password.message}</p>
               )}
             </div>
 
             {errors.root && (
-              <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
+              <p className="text-sm text-maroon bg-maroon-tint px-3 py-2 rounded-lg">
                 {errors.root.message}
               </p>
             )}
 
-            <Button type="submit" disabled={isSubmitting} className="mt-1 w-full bg-[#1e3a5f] hover:bg-[#1e3a5f]/90" size="lg">
+            <Button type="submit" disabled={isSubmitting} className="mt-1 w-full" size="lg">
               {isSubmitting ? "Signing in…" : "Sign in"}
             </Button>
           </form>

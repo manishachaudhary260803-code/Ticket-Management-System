@@ -95,7 +95,7 @@ function formatDateTime(iso: string) {
 function SidebarField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="section-label text-gray-500 mb-1">{label}</p>
+      <p className="section-label text-ink-muted mb-1">{label}</p>
       {children}
     </div>
   )
@@ -105,23 +105,23 @@ function TicketContent({ ticket }: { ticket: Ticket }) {
   return (
     <>
       <DetailSection label="From" className="space-y-1">
-        <p className="text-sm font-medium text-gray-900">{ticket.from_name ?? ticket.from_email}</p>
-        {ticket.from_name && <p className="text-sm text-gray-500">{ticket.from_email}</p>}
+        <p className="text-sm font-medium text-ink">{ticket.from_name ?? ticket.from_email}</p>
+        {ticket.from_name && <p className="text-sm text-ink-muted">{ticket.from_email}</p>}
       </DetailSection>
 
       <DetailSection label="Email body">
-        <pre className="text-gray-800">{ticket.body}</pre>
+        <pre className="text-ink">{ticket.body}</pre>
       </DetailSection>
 
       {ticket.ai_summary && (
-        <DetailSection label="AI Summary" variant="blue">
-          <p className="text-sm text-gray-800 leading-relaxed">{ticket.ai_summary}</p>
+        <DetailSection label="AI Summary" variant="sage">
+          <p className="text-sm text-ink leading-relaxed">{ticket.ai_summary}</p>
         </DetailSection>
       )}
 
       {ticket.ai_draft_reply && (
-        <DetailSection label="AI Draft Reply" variant="amber">
-          <pre className="text-gray-800">{ticket.ai_draft_reply}</pre>
+        <DetailSection label="AI Draft Reply" variant="brass">
+          <pre className="text-ink">{ticket.ai_draft_reply}</pre>
         </DetailSection>
       )}
     </>
@@ -131,19 +131,19 @@ function TicketContent({ ticket }: { ticket: Ticket }) {
 function ReplyCard({ reply }: { reply: Reply }) {
   const isAgent = reply.sender_type === "agent"
   return (
-    <div className={`rounded-lg border px-5 py-4 ${isAgent ? "bg-white border-gray-200" : "bg-gray-50 border-gray-200"}`}>
+    <div className={`rounded-lg border px-5 py-4 ${isAgent ? "bg-card border-border" : "bg-secondary/60 border-border"}`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-900">
+          <span className="text-sm font-medium text-ink">
             {isAgent ? (reply.author?.name ?? "Agent") : "Customer"}
           </span>
-          <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${isAgent ? "bg-[#1e3a5f]/10 text-[#1e3a5f]" : "bg-gray-200 text-gray-600"}`}>
+          <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${isAgent ? "bg-navy-tint text-navy" : "bg-secondary text-ink-muted"}`}>
             {isAgent ? "Agent" : "Customer"}
           </span>
         </div>
-        <span className="text-xs text-gray-400">{formatDateTime(reply.created_at)}</span>
+        <span className="font-mono text-xs text-ink-muted">{formatDateTime(reply.created_at)}</span>
       </div>
-      <div className="text-sm text-gray-700 whitespace-pre-wrap">{reply.body}</div>
+      <div className="text-sm text-ink/90 whitespace-pre-wrap">{reply.body}</div>
     </div>
   )
 }
@@ -289,7 +289,7 @@ export default function TicketDetail({ id }: { id: string }) {
   }
 
   if (isError) {
-    return <p className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-md">{errorMessage}</p>
+    return <p className="text-sm text-maroon bg-maroon-tint px-4 py-3 rounded-md">{errorMessage}</p>
   }
 
   if (!ticket) return null
@@ -300,20 +300,20 @@ export default function TicketDetail({ id }: { id: string }) {
       {/* Left — main content */}
       <div className="lg:col-span-2 space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">{ticket.subject}</h1>
-          <p className="mt-1 text-sm text-gray-500">#{ticket.id.slice(0, 8)}</p>
+          <p className="font-mono text-xs text-brass-dark tracking-wide mb-1">#{ticket.id.slice(0, 8).toUpperCase()}</p>
+          <h1 className="font-display italic text-2xl text-ink">{ticket.subject}</h1>
         </div>
 
         <TicketContent ticket={ticket} />
 
         {/* Reply thread */}
         <section>
-          <p className="section-label text-gray-500 mb-3">
+          <p className="section-label text-ink-muted mb-3">
             Reply Thread {replies.length > 0 && `(${replies.length})`}
           </p>
 
           {replies.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">No replies yet.</p>
+            <p className="text-sm text-ink-muted italic">No replies yet.</p>
           ) : (
             <div className="space-y-3">
               {replies.map((reply) => <ReplyCard key={reply.id} reply={reply} />)}
@@ -326,18 +326,18 @@ export default function TicketDetail({ id }: { id: string }) {
                 type="button"
                 onClick={handleSummarize}
                 disabled={isSummarizing}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[#1e3a5f] bg-white border border-[#1e3a5f] rounded-lg hover:bg-[#1e3a5f]/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-navy bg-white border border-navy rounded-lg hover:bg-navy-tint disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 {isSummarizing ? "Summarizing…" : conversationSummary ? "Re-summarize" : "Summarize"}
               </button>
             </div>
             {summarizeError && (
-              <p className="text-xs text-red-600">{summarizeError}</p>
+              <p className="text-xs text-maroon">{summarizeError}</p>
             )}
             {conversationSummary && (
-              <DetailSection label="Conversation Summary" variant="blue">
-                <p className="text-sm text-gray-800 leading-relaxed">{conversationSummary}</p>
+              <DetailSection label="Conversation Summary" variant="sage">
+                <p className="text-sm text-ink leading-relaxed">{conversationSummary}</p>
               </DetailSection>
             )}
           </div>
@@ -355,10 +355,10 @@ export default function TicketDetail({ id }: { id: string }) {
               }}
               placeholder="Write a reply… (Enter to send, Shift+Enter for new line)"
               rows={4}
-              className="w-full text-sm border border-gray-200 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1e3a5f] resize-none"
+              className="w-full text-sm border border-border rounded-lg px-4 py-3 text-ink placeholder-ink-muted focus:outline-none focus:ring-1 focus:ring-navy resize-none"
             />
             {(replyMutation.isError || polishError) && (
-              <p className="text-xs text-red-600">
+              <p className="text-xs text-maroon">
                 {polishError
                   ? polishError
                   : axios.isAxiosError(replyMutation.error)
@@ -371,7 +371,7 @@ export default function TicketDetail({ id }: { id: string }) {
                 type="button"
                 onClick={handlePolish}
                 disabled={!replyBody.trim() || isPolishing || replyMutation.isPending}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[#1e3a5f] bg-white border border-[#1e3a5f] rounded-lg hover:bg-[#1e3a5f]/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-navy bg-white border border-navy rounded-lg hover:bg-navy-tint disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 {isPolishing ? "Polishing…" : "Polish"}
@@ -379,7 +379,7 @@ export default function TicketDetail({ id }: { id: string }) {
               <button
                 type="submit"
                 disabled={!replyBody.trim() || replyMutation.isPending || isPolishing}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#1e3a5f] rounded-lg hover:bg-[#162e4d] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-navy rounded-lg hover:bg-navy-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="w-3.5 h-3.5" />
                 {replyMutation.isPending ? "Sending…" : "Send Reply"}
@@ -390,7 +390,7 @@ export default function TicketDetail({ id }: { id: string }) {
       </div>
 
       {/* Right — metadata & actions */}
-      <aside className="bg-white rounded-lg border border-gray-200 px-5 py-6 space-y-5">
+      <aside className="bg-card rounded-lg border border-border px-5 py-6 space-y-5">
         <SidebarField label="Status">
           <select
             aria-label="Status"
@@ -435,18 +435,18 @@ export default function TicketDetail({ id }: { id: string }) {
         </SidebarField>
 
         <SidebarField label="Priority">
-          <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium ${priorityStyles[ticket.priority] ?? "bg-gray-100 text-gray-600"}`}>
+          <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium ${priorityStyles[ticket.priority] ?? "bg-secondary text-ink-muted"}`}>
             {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
           </span>
         </SidebarField>
 
-        <div className="border-t border-gray-100 pt-4 space-y-4">
+        <div className="border-t border-border pt-4 space-y-4">
           <SidebarField label="Received">
-            <p className="text-sm text-gray-700">{formatDateTime(ticket.created_at)}</p>
+            <p className="font-mono text-sm text-ink/90">{formatDateTime(ticket.created_at)}</p>
           </SidebarField>
 
           <SidebarField label="Last Updated">
-            <p className="text-sm text-gray-700">{formatDateTime(ticket.updated_at)}</p>
+            <p className="font-mono text-sm text-ink/90">{formatDateTime(ticket.updated_at)}</p>
           </SidebarField>
         </div>
       </aside>

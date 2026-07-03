@@ -23,9 +23,9 @@ export default function TicketPagination({ page, pageSize, total, onPageChange, 
   const to = Math.min(page * pageSize, total)
 
   return (
-    <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+    <div className="flex items-center justify-between mt-4 text-sm text-ink-muted">
       {/* Left — result count */}
-      <span className="text-gray-500">
+      <span className="font-mono text-xs text-ink-muted">
         {total === 0 ? "No tickets" : `Showing ${from}–${to} of ${total} tickets`}
       </span>
 
@@ -34,7 +34,7 @@ export default function TicketPagination({ page, pageSize, total, onPageChange, 
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page === 1}
-          className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-1.5 rounded hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           aria-label="Previous page"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -42,15 +42,15 @@ export default function TicketPagination({ page, pageSize, total, onPageChange, 
 
         {pageRange(page, totalPages).map((p, i) =>
           p === "…" ? (
-            <span key={`ellipsis-${i}`} className="px-2 text-gray-400 select-none">…</span>
+            <span key={`ellipsis-${i}`} className="px-2 text-ink-muted select-none">…</span>
           ) : (
             <button
               key={p}
               onClick={() => onPageChange(p)}
-              className={`min-w-[2rem] h-8 px-2 rounded text-sm font-medium transition-colors ${
+              className={`min-w-[2rem] h-8 px-2 rounded text-sm font-mono font-medium transition-colors ${
                 p === page
-                  ? "bg-[#1e3a5f] text-white"
-                  : "hover:bg-gray-100 text-gray-700"
+                  ? "bg-navy text-white"
+                  : "hover:bg-secondary text-ink"
               }`}
             >
               {p}
@@ -61,7 +61,7 @@ export default function TicketPagination({ page, pageSize, total, onPageChange, 
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page === totalPages}
-          className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-1.5 rounded hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           aria-label="Next page"
         >
           <ChevronRight className="w-4 h-4" />
@@ -69,12 +69,12 @@ export default function TicketPagination({ page, pageSize, total, onPageChange, 
       </div>
 
       {/* Right — page size */}
-      <div className="flex items-center gap-2 text-gray-500">
+      <div className="flex items-center gap-2 text-ink-muted">
         <span>Rows per page</span>
         <select
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          className="border border-gray-200 rounded-md px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className="border border-border rounded-md px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-navy/40"
         >
           {PAGE_SIZE_OPTIONS.map((n) => (
             <option key={n} value={n}>{n}</option>

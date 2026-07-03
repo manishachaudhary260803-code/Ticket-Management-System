@@ -42,11 +42,14 @@ export default function UsersPage() {
     : null
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">Users</h2>
+          <div>
+            <p className="section-label text-brass-dark mb-1">Staff Directory</p>
+            <h2 className="font-display italic text-3xl text-ink">Users</h2>
+          </div>
           <Button onClick={() => setDialog({ mode: "create" })} size="sm">
             Add User
           </Button>

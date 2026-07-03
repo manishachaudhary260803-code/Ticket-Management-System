@@ -5,11 +5,12 @@ import logging
 import os
 import uuid
 from email.header import decode_header, make_header
-from html.parser import HTMLParser
 
 from app.database import SessionLocal
 from app.models.ticket import Category, Priority, Ticket, TicketStatus
+from app.services.ai_agent import get_ai_agent_id
 from app.services.classifier import classify_ticket
+from app.utils.html import strip_html
 
 logger = logging.getLogger(__name__)
 
@@ -18,24 +19,6 @@ IMAP_PORT = int(os.getenv("IMAP_PORT", "993"))
 IMAP_USER = os.getenv("IMAP_USER", "")
 IMAP_PASSWORD = os.getenv("IMAP_PASSWORD", "")
 POLL_INTERVAL = int(os.getenv("EMAIL_POLL_INTERVAL", "60"))
-
-
-class _HTMLStripper(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self._parts: list[str] = []
-
-    def handle_data(self, data: str) -> None:
-        self._parts.append(data)
-
-    def get_text(self) -> str:
-        return " ".join(self._parts)
-
-
-def _strip_html(html: str) -> str:
-    s = _HTMLStripper()
-    s.feed(html)
-    return s.get_text()
 
 
 def _decode_header_str(value: str | None) -> str:
@@ -75,7 +58,7 @@ def _extract_body(msg: email_lib.message.Message) -> str:
     if plain is not None:
         return plain.strip()
     if html is not None:
-        return _strip_html(html).strip()
+        return strip_html(html).strip()
     return ""
 
 
@@ -88,6 +71,7 @@ def poll_mailbox(loop: asyncio.AbstractEventLoop) -> int:
     created = 0
     db = SessionLocal()
     try:
+        ai_agent_id = get_ai_agent_id(db)
         with imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT) as imap:
             imap.login(IMAP_USER, IMAP_PASSWORD)
             imap.select("INBOX")
@@ -137,6 +121,7 @@ def poll_mailbox(loop: asyncio.AbstractEventLoop) -> int:
                     status=TicketStatus.open,
                     priority=Priority.low,
                     category=Category.other,
+                    assignee_id=ai_agent_id,
                 )
                 db.add(ticket)
                 db.commit()

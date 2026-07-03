@@ -1,4 +1,5 @@
 import "dotenv/config"
+import { randomBytes } from "crypto"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { eq } from "drizzle-orm"
@@ -6,6 +7,11 @@ import { db } from "./db"
 import * as schema from "./db/schema"
 import { Role } from "./db/roles"
 import { user } from "./db/schema"
+
+// Well-known identifier for the AI agent account — referenced by server/ to
+// auto-assign new tickets. Nobody is meant to log in as this account, so its
+// password is a random string generated once at seed time and discarded.
+export const AI_AGENT_EMAIL = "ai-agent@codewithme.internal"
 
 // Separate auth instance with sign-up enabled — only used here for seeding
 const seedAuth = betterAuth({
@@ -19,14 +25,14 @@ const seedAuth = betterAuth({
 })
 
 async function seedUser(email: string, password: string, name: string, role: Role) {
-  if (password.length < 16) {
-    console.error(`Password for ${email} must be at least 16 characters`)
-    process.exit(1)
-  }
   const existing = await db.select().from(user).where(eq(user.email, email)).limit(1)
   if (existing.length > 0) {
     console.log(`User ${email} already exists — skipping.`)
     return
+  }
+  if (password.length < 16) {
+    console.error(`Password for ${email} must be at least 16 characters`)
+    process.exit(1)
   }
   await seedAuth.api.signUpEmail({ body: { email, password, name } })
   await db.update(user).set({ role }).where(eq(user.email, email))
@@ -49,6 +55,8 @@ async function seed() {
   if (agentEmail && agentPassword) {
     await seedUser(agentEmail, agentPassword, "Agent", Role.agent)
   }
+
+  await seedUser(AI_AGENT_EMAIL, randomBytes(24).toString("hex"), "AI", Role.agent)
 
   process.exit(0)
 }

@@ -8,3 +8,7 @@ bcrypt
 passlib[bcrypt]
 python-jose[cryptography]
 httpx
+sendgrid
+python-multipart
+email-validator
+sentry-sdk[fastapi]

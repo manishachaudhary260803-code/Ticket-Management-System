@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session as DBSession
 
@@ -9,6 +9,7 @@ from app.auth import get_current_user
 from app.database import get_db
 from app.models.ticket import Category, Priority, SenderType, Ticket, TicketReply, TicketStatus
 from app.models.user import User
+from app.utils.email import send_email
 
 _SORTABLE = {
     "subject": Ticket.subject,
@@ -34,6 +35,8 @@ class TicketOut(BaseModel):
     assignee_id: str | None
     ai_summary: str | None
     ai_draft_reply: str | None
+    resolved_at: datetime | None
+    resolved_by_ai: bool
     created_at: datetime
     updated_at: datetime
 
@@ -105,6 +108,12 @@ def update_ticket(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     if body.status is not None:
+        if body.status == TicketStatus.resolved and ticket.status != TicketStatus.resolved:
+            ticket.resolved_at = datetime.now(timezone.utc)
+            ticket.resolved_by_ai = False
+        elif body.status != TicketStatus.resolved and ticket.status == TicketStatus.resolved:
+            ticket.resolved_at = None
+            ticket.resolved_by_ai = False
         ticket.status = body.status
     if body.category is not None:
         ticket.category = body.category
@@ -121,23 +130,36 @@ class TicketAssign(BaseModel):
 def assign_ticket(
     ticket_id: str,
     body: TicketAssign,
+    background_tasks: BackgroundTasks,
     db: DBSession = Depends(get_db),
     _user: User = Depends(get_current_user),
 ):
     ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
+    assignee = None
     if body.assignee_id is not None:
-        user = (
+        assignee = (
             db.query(User)
             .filter(User.id == body.assignee_id, User.deleted_at == None)
             .first()
         )
-        if not user:
+        if not assignee:
             raise HTTPException(status_code=400, detail="assignee_id must be a valid user")
+    notify = assignee is not None and body.assignee_id != ticket.assignee_id
     ticket.assignee_id = body.assignee_id
     db.commit()
     db.refresh(ticket)
+    if notify:
+        background_tasks.add_task(
+            send_email,
+            to=assignee.email,
+            subject=f"Ticket assigned: {ticket.subject}",
+            body=(
+                f"You've been assigned a ticket from {ticket.from_name or ticket.from_email}.\n\n"
+                f"Subject: {ticket.subject}\n\n{ticket.body}"
+            ),
+        )
     return ticket
 
 
@@ -181,6 +203,7 @@ def list_replies(
 def create_reply(
     ticket_id: str,
     body: ReplyCreate,
+    background_tasks: BackgroundTasks,
     db: DBSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -198,4 +221,10 @@ def create_reply(
     db.add(reply)
     db.commit()
     db.refresh(reply)
+    background_tasks.add_task(
+        send_email,
+        to=ticket.from_email,
+        subject=f"Re: {ticket.subject}",
+        body=body.body,
+    )
     return reply
