@@ -10,11 +10,13 @@ server {
     gzip on;
     gzip_types text/plain text/css application/javascript application/json image/svg+xml;
 
-    # Docker's embedded DNS. Re-resolve upstream hostnames periodically
-    # instead of caching them once at nginx startup — otherwise every
-    # redeploy of auth/server (which get a new internal IP) leaves this
-    # service proxying to a dead address until it's redeployed too.
-    resolver 127.0.0.11 valid=10s;
+    # Re-resolve upstream hostnames periodically instead of caching them
+    # once at nginx startup — otherwise every redeploy of auth/server
+    # (which get a new internal IP) leaves this service proxying to a dead
+    # address until it's redeployed too. ${RESOLVER} is discovered from
+    # /etc/resolv.conf at container startup (see docker-entrypoint-resolver.sh)
+    # since Railway's runtime doesn't expose Docker's embedded 127.0.0.11.
+    resolver ${RESOLVER} valid=10s;
 
     # Better Auth — must be matched before the general /api/ block below.
     # No trailing slash on proxy_pass: nginx forwards the request URI

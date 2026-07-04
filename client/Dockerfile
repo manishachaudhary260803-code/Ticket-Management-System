@@ -24,6 +24,8 @@ RUN npm run build
 FROM nginx:1.27-alpine AS runtime
 COPY --from=build /app/client/dist /usr/share/nginx/html
 COPY client/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY client/docker-entrypoint-resolver.sh /docker-entrypoint-resolver.sh
+RUN chmod +x /docker-entrypoint-resolver.sh
 
 # Defaults assume services are named "auth" and "server" in the Railway
 # project (Railway private networking DNS). Override via env vars if named
@@ -32,3 +34,9 @@ ENV AUTH_UPSTREAM=http://auth.railway.internal:3001
 ENV SERVER_UPSTREAM=http://server.railway.internal:3000
 ENV PORT=8080
 EXPOSE 8080
+
+# Wraps the official entrypoint: discovers this environment's real DNS
+# resolver address before nginx's templates get envsubst'd (Railway doesn't
+# expose Docker's embedded 127.0.0.11 resolver).
+ENTRYPOINT ["/docker-entrypoint-resolver.sh"]
+CMD ["nginx", "-g", "daemon off;"]
