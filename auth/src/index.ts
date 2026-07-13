@@ -20,6 +20,11 @@ if (!secret || secret.includes("dev-secret") || secret.includes("change-this")) 
 const app = express()
 const CLIENT_URL = process.env.CLIENT_URL ?? "http://localhost:5173"
 
+// nginx (client service) is the only hop in front of this service on Railway's
+// private network — trust its X-Forwarded-For so rate limiting keys on the
+// real visitor IP instead of nginx's proxy IP for every request.
+app.set("trust proxy", 1)
+
 app.use(
   cors({
     origin: CLIENT_URL,
