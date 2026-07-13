@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -8,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 
+const DEMO_CREDENTIALS = { email: "enjay@example.com", password: "Enjay@123" }
+
 const schema = z.object({
   email: z.string().email("Enter a valid email address"),
   password: z.string().min(1, "Password is required"),
@@ -17,6 +20,7 @@ type FormData = z.infer<typeof schema>
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const [isDemoLoading, setIsDemoLoading] = useState(false)
 
   const {
     register,
@@ -25,7 +29,7 @@ export default function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) })
 
-  async function onSubmit(data: FormData) {
+  async function signIn(data: FormData) {
     const { error } = await authClient.signIn.email(data)
 
     if (error) {
@@ -36,6 +40,12 @@ export default function LoginPage() {
     navigate("/")
   }
 
+  async function handleDemoLogin() {
+    setIsDemoLoading(true)
+    await signIn(DEMO_CREDENTIALS)
+    setIsDemoLoading(false)
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-sm border-t-2 border-t-brass">
@@ -44,12 +54,27 @@ export default function LoginPage() {
           <CardDescription className="text-ink-muted">Ticket Management System</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 rounded-lg bg-sage-tint px-3 py-2 text-sm text-ink">
-            <p className="font-medium text-sage">Demo credentials</p>
-            <p className="text-ink-muted">enjay@example.com / Enjay@123</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mb-4 w-full border-sage text-sage hover:bg-sage-tint"
+            size="lg"
+            disabled={isDemoLoading || isSubmitting}
+            onClick={handleDemoLogin}
+          >
+            {isDemoLoading ? "Signing in…" : "Try demo account"}
+          </Button>
+
+          <div className="relative mb-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-card px-2 text-ink-muted uppercase">or sign in manually</span>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit(signIn)} noValidate className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">Email</Label>
               <Input
