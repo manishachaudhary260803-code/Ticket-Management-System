@@ -44,6 +44,11 @@ export default function LoginPage() {
           <CardDescription className="text-ink-muted">Ticket Management System</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 rounded-lg bg-sage-tint px-3 py-2 text-sm text-ink">
+            <p className="font-medium text-sage">Demo credentials</p>
+            <p className="text-ink-muted">enjay@example.com / Enjay@123</p>
+          </div>
+
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">Email</Label>
