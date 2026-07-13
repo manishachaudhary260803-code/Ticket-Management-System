@@ -24,10 +24,13 @@ const createUserAuth = betterAuth({
 
 async function requireAdmin(req: express.Request, res: express.Response): Promise<boolean> {
   const cookieHeader = req.headers.cookie ?? ""
-  const token = cookieHeader
-    .split(";")
-    .map((c) => c.trim())
-    .find((c) => c.startsWith("better-auth.session_token="))
+  const cookies = cookieHeader.split(";").map((c) => c.trim())
+  // Better Auth prefixes the cookie with "__Secure-" when served over HTTPS
+  // (production), but not over plain http:// (local dev) — check both.
+  const token = (
+    cookies.find((c) => c.startsWith("__Secure-better-auth.session_token=")) ??
+    cookies.find((c) => c.startsWith("better-auth.session_token="))
+  )
     ?.split("=")
     .slice(1)
     .join("=")
